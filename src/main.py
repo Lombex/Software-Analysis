@@ -23,7 +23,8 @@ def main():
 
     while True:
         print("1. Login")
-        print("2. Exit")
+        print("2. Usermenu")
+        print("3. Exit")
         choice = input("Enter choice: ")
 
         if choice == '1':
@@ -95,6 +96,9 @@ def main():
             else:
                 print("Invalid credentials")
         elif choice == '2':
+            User.handle_user_input()
+            break
+        elif choice == '3':
             print("Goodbye!")
             break
         else:
