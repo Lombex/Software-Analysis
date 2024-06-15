@@ -11,7 +11,8 @@ class MemberManager:
         print("3. Update Member")
         print("4. Delete Member")
         print("5. List All Members")
-        print("6. Back to Main Menu")
+        print("6. Search Members")
+        print("7. Back to Main Menu")
         print()
 
     def run_member_management(self):
@@ -30,6 +31,8 @@ class MemberManager:
             elif choice == '5':
                 self.list_members()
             elif choice == '6':
+                self.search_members()
+            elif choice == '7':
                 print("Returning to Main Menu...")
                 break
             else:
@@ -109,4 +112,37 @@ class MemberManager:
                 print(f"ID: {member[0]}, Name: {member[1]} {member[2]}, Age: {member[3]}, Gender: {member[4]}, Weight: {member[5]}, Address: {member[6]}, Email: {member[7]}, Phone: {member[8]}")
         else:
             print("No members found.")
+        input("Press Enter to continue...")
+    
+    def search_members(self):
+        print("Search Members")
+        print("Enter search key (member ID, first name, last name, address, email, phone):")
+        search_key = input("Search key: ").strip().lower()
+
+        if search_key == 'member id':
+            criteria = 'id'
+        elif search_key == 'first name':
+            criteria = 'first_name'
+        elif search_key == 'last name':
+            criteria = 'last_name'
+        elif search_key == 'address':
+            criteria = 'address'
+        elif search_key == 'email':
+            criteria = 'email'
+        elif search_key == 'phone':
+            criteria = 'phone'
+        else:
+            print("Invalid search key.")
+            input("Press Enter to continue...")
+            return
+
+        value = input(f"Enter {search_key.title()} to search: ")
+
+        results = self.member.search_members(criteria, value)
+        if results:
+            print("Search Results:")
+            for result in results:
+                print(f"ID: {result[0]}, Name: {result[1]} {result[2]}, Age: {result[3]}, Gender: {result[4]}, Weight: {result[5]}, Address: {result[6]}, Email: {result[7]}, Phone: {result[8]}")
+        else:
+            print("No members found matching the criteria.")
         input("Press Enter to continue...")

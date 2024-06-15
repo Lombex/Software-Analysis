@@ -27,6 +27,25 @@ class Member:
         conn.close()
         
         return membership_id
+    
+    @staticmethod
+    def search_members(criteria, value, db_name='unique_meal.db'):
+        conn = sqlite3.connect(db_name)
+        c = conn.cursor()
+        
+        # Define valid criteria that can be searched
+        valid_criteria = ['id', 'first_name', 'last_name', 'address', 'email', 'phone']
+        
+        if criteria in valid_criteria:
+            # Use parameterized query to prevent SQL injection and handle partial matches
+            query = f"SELECT * FROM members WHERE {criteria} LIKE ?"
+            c.execute(query, ('%' + value + '%',))
+            results = c.fetchall()
+            conn.close()
+            return results
+        else:
+            conn.close()
+            raise ValueError("Invalid search criteria")
 
     def get_member(self, member_id):
         conn = sqlite3.connect(self.db_name)
