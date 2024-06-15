@@ -8,7 +8,7 @@ import os
 
 def main():
     db_name = 'unique_meal.db'
-    sql_file = 'schema.sql'
+    sql_file = 'src/schema.sql'
     if not os.path.exists(db_name):
         print("Initializing database...")
         initialize_db(db_name, sql_file)

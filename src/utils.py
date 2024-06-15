@@ -1,12 +1,8 @@
-from cryptography.fernet import Fernet
+import re
 
-class Utils:
-    def __init__(self):
-        self.key = Fernet.generate_key()
-        self.cipher_suite = Fernet(self.key)
+def validate_username(username):
+    return re.match("^[a-zA-Z0-9_]+$", username) is not None
 
-    def encrypt(self, data):
-        return self.cipher_suite.encrypt(data.encode()).decode()
-
-    def decrypt(self, encrypted_data):
-        return self.cipher_suite.decrypt(encrypted_data.encode()).decode()
+def validate_password(password):
+    # Example: at least 8 characters, contains a number and a letter
+    return len(password) >= 8 and re.search("[a-zA-Z]", password) and re.search("[0-9]", password)
