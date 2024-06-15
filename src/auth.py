@@ -1,22 +1,18 @@
+import sqlite3
 import hashlib
-from database import Database
 
 class Auth:
-    def __init__(self):
-        self.db = Database()
+    def __init__(self, db_name='unique_meal.db'):
+        self.db_name = db_name
 
     def login(self, username, password):
         password_hash = hashlib.sha256(password.encode()).hexdigest()
-        user = self.db.conn.execute("""
-        SELECT * FROM users WHERE username = ? AND password_hash = ?
-        """, (username, password_hash)).fetchone()
+        conn = sqlite3.connect(self.db_name)
+        c = conn.cursor()
+        c.execute("SELECT * FROM users WHERE username = ? AND password_hash = ?", (username, password_hash))
+        user = c.fetchone()
+        conn.close()
         return user
 
     def is_super_admin(self, user):
-        return user and user[3] == 'super_admin'
-
-    def is_system_admin(self, user):
-        return user and user[3] == 'system_admin'
-
-    def is_consultant(self, user):
-        return user and user[3] == 'consultant'
+        return user[3] == 'super_admin'

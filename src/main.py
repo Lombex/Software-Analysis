@@ -2,13 +2,22 @@ from auth import Auth
 from user import User
 from member import Member
 from logger import Logger
-from backup.py import Backup
-import getpass
+from backup import Backup
+from database import initialize_db, add_default_super_admin
+import os
 
 def main():
-    auth = Auth()
-    logger = Logger()
-    backup = Backup()
+    db_name = 'unique_meal.db'
+    sql_file = 'schema.sql'
+    if not os.path.exists(db_name):
+        print("Initializing database...")
+        initialize_db(db_name, sql_file)
+        add_default_super_admin(db_name)
+        print("Database initialized and default super admin added.")
+
+    auth = Auth(db_name)
+    logger = Logger(db_name)
+    backup = Backup(db_name)
 
     print("Welcome to Unique Meal Member Management System")
 
@@ -19,7 +28,7 @@ def main():
 
         if choice == '1':
             username = input("Username: ")
-            password = getpass.getpass("Password: ")
+            password = input("Password: ")  # Changed from getpass.getpass to input
 
             user = auth.login(username, password)
             if user:
@@ -44,17 +53,17 @@ def main():
                         email = input("Email: ")
                         phone = input("Phone: ")
 
-                        Member.add_member(first_name, last_name, age, gender, weight, address, email, phone)
+                        Member.add_member(first_name, last_name, age, gender, weight, address, email, phone, db_name)
                         logger.log_activity(username, "Added Member")
                     elif choice == '2':
                         if auth.is_super_admin(user):
                             username = input("Username: ")
-                            password = getpass.getpass("Password: ")
+                            password = input("Password: ")
                             role = input("Role: ")
                             first_name = input("First Name: ")
                             last_name = input("Last Name: ")
 
-                            User.add_user(username, password, role, first_name, last_name)
+                            User.add_user(username, password, role, first_name, last_name, db_name)
                             logger.log_activity(username, "Added User")
                         else:
                             print("Unauthorized action.")
