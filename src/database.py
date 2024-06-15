@@ -1,4 +1,5 @@
 import sqlite3
+import hashlib
 
 def initialize_db(db_name, sql_file):
     conn = sqlite3.connect(db_name)
