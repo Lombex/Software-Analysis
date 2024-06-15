@@ -18,4 +18,4 @@ class Auth:
         return user
 
     def is_super_admin(self, user):
-        return user[3] == 'super_admin'
+        return user and user[3] == 'super_admin'
