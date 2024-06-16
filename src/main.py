@@ -20,11 +20,9 @@ def main():
     backup = Backup(db_name)
 
     print("Welcome to Unique Meal Member Management System")
-
     while True:
         print("1. Login")
-        print("2. Usermenu")
-        print("3. Exit")
+        print("2. Exit")
         choice = input("Enter choice: ")
 
         if choice == '1':
@@ -37,7 +35,7 @@ def main():
                 logger.log_activity(username, "Logged in")
                 while True:
                     print("1. Add Member")
-                    print("2. Add User")
+                    print("2. User Menu")
                     print("3. Create Backup")
                     print("4. Restore Backup")
                     print("5. View Logs")
@@ -57,17 +55,7 @@ def main():
                         Member.add_member(first_name, last_name, age, gender, weight, address, email, phone, db_name)
                         logger.log_activity(username, "Added Member")
                     elif choice == '2':
-                        if auth.is_super_admin(user):
-                            username = input("Username: ")
-                            password = input("Password: ")
-                            role = input("Role: ")
-                            first_name = input("First Name: ")
-                            last_name = input("Last Name: ")
-
-                            User.add_user(username, password, role, first_name, last_name, db_name)
-                            logger.log_activity(username, "Added User")
-                        else:
-                            print("Unauthorized action.")
+                        User.handle_user_input(user)
                     elif choice == '3':
                         if auth.is_super_admin(user):
                             backup.create_backup()
@@ -96,9 +84,6 @@ def main():
             else:
                 print("Invalid credentials")
         elif choice == '2':
-            User.handle_user_input()
-            break
-        elif choice == '3':
             print("Goodbye!")
             break
         else:

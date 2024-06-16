@@ -1,10 +1,19 @@
 import sqlite3
 import hashlib
-from auth import Auth
-from logger import Logger
 from datetime import datetime
 
 class User:
+    @staticmethod
+    def get_user_role(username):
+        conn = sqlite3.connect('unique_meal.db')
+        c = conn.cursor()
+        c.execute("SELECT role FROM users WHERE username = ?", username)
+        result = c.fetchone()
+        conn.close()
+        if result:
+            return result[0]
+        return None
+
     @staticmethod
     def add_user(username, password, role, first_name, last_name, db_name='unique_meal.db'):
         password_hash = hashlib.sha256(password.encode()).hexdigest()
@@ -21,19 +30,15 @@ class User:
             conn.close()
 
     @staticmethod
-    def remove_user(username, db_name='unique_meal.db'):
-        conn = sqlite3.connect(db_name)
-        c = conn.cursor()
-        c.execute("DELETE FROM users WHERE username = ?", (username,))
-        if c.rowcount == 0:
-            print("User not found.")
-        else:
-            conn.commit()
-            print(f"User '{username}' removed successfully.")
-        conn.close()
+    def update_user(username, password=None, role=None, first_name=None, last_name=None, current_username=None, db_name='unique_meal.db'):
+        if current_username:
+            current_user = User.get_user(current_username, db_name)
+            if current_user and current_user[3] != 'super_admin':
+                if role:
+                    print("Only super admins can change roles.")
+                    #Logger.log_activity(current_username, 'update_user', 'Failed to update role: Not super admin', 'Yes')
+                    return
 
-    @staticmethod
-    def update_user(username, password=None, role=None, first_name=None, last_name=None, db_name='unique_meal.db'):
         conn = sqlite3.connect(db_name)
         c = conn.cursor()
 
@@ -63,17 +68,31 @@ class User:
         c.execute(query, values)
 
         if c.rowcount == 0:
+           # Logger.log_activity(username, 'update_user', 'Failed to update user: User not found', 'Yes')
             print("User not found.")
         else:
             conn.commit()
+            # Logger.log_activity(username, 'update_user', 'User updated successfully')
             print(f"User '{username}' updated successfully.")
+        conn.close()
+
+    @staticmethod
+    def remove_user(username, db_name='unique_meal.db'):
+        conn = sqlite3.connect(db_name)
+        c = conn.cursor()
+        c.execute("DELETE FROM users WHERE username = ?", (username,))
+        if c.rowcount == 0:
+            print("User not found.")
+        else:
+            conn.commit()
+            print(f"User '{username}' removed successfully.")
         conn.close()
 
     @staticmethod
     def get_user(username, db_name='unique_meal.db'):
         conn = sqlite3.connect(db_name)
         c = conn.cursor()
-        c.execute("SELECT * FROM users WHERE username = ?", (username,))
+        c.execute("SELECT * FROM users WHERE username = ?", ([username]))
         user = c.fetchone()
         conn.close()
         if user:
@@ -99,9 +118,9 @@ class User:
         users = c.fetchall()
         conn.close()
         return users
-    
+
     @staticmethod
-    def handle_user_input():
+    def handle_user_input(current_user):
         db_name = 'unique_meal.db'
         while True:
             print("Welcome to Unique Meal Membership Management System")
@@ -116,17 +135,17 @@ class User:
             if choice == '1':
                 username = input("Username: ")
                 password = input("Password: ")
-                role = input("Role (super_admin/system_admin/consultant): ")
                 first_name = input("First Name: ")
                 last_name = input("Last Name: ")
-                User.add_user(username, password, role, first_name, last_name)
+                # Registered User on default starts out as consultant
+                User.add_user(username, password, "consultant", first_name, last_name)
             elif choice == '2':
                 username = input("Username: ")
                 password = input("New Password (leave blank if unchanged): ")
                 role = input("New Role (leave blank if unchanged): ")
                 first_name = input("New First Name (leave blank if unchanged): ")
                 last_name = input("New Last Name (leave blank if unchanged): ")
-                User.update_user(username, password, role, first_name, last_name)
+                User.update_user(username, password, role, first_name, last_name, current_username=current_user)
             elif choice == '3':
                 username = input("Username: ")
                 User.remove_user(username)
