@@ -6,7 +6,7 @@ class Logger:
     def __init__(self, db_name='unique_meal.db'):
         self.db_name = db_name
 
-    def log_activity(self, username, activity):
+    def log_activity(self, username, activity, additional_info='', suspicious='No'):
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
         date = datetime.datetime.now().strftime("%Y-%m-%d")
