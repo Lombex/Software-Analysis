@@ -1,12 +1,15 @@
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY,
-    username TEXT UNIQUE,
-    password_hash TEXT,
-    role TEXT,
-    first_name TEXT,
-    last_name TEXT,
-    registration_date TEXT
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    registration_date TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+
+
 
 CREATE TABLE IF NOT EXISTS members (
     id INTEGER PRIMARY KEY,
