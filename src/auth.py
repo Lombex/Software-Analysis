@@ -1,8 +1,7 @@
 import sqlite3
 from hashlib import sha256
-
-import sqlite3
-from hashlib import sha256
+import secrets
+import string
 
 class Auth:
     def __init__(self, db_name='unique_meal.db'):
@@ -17,7 +16,6 @@ class Auth:
 
         conn.close()
         return user
-        
 
     def change_password(self, username, current_password, new_password):
         conn = sqlite3.connect(self.db_name)
@@ -64,6 +62,50 @@ class Auth:
             print(f"SQLite error while resetting password: {e}")
             conn.close()
             return False
+
+    def create_temp_password(self, creator_role, username=None):
+        conn = sqlite3.connect(self.db_name)
+        c = conn.cursor()
+
+        try:
+            if creator_role not in ['super_admin', 'system_admin', 'consultant']:
+                print("You do not have permission to create temporary passwords.")
+                return False
+
+            temp_password = "TempPassword_1"
+            
+            if creator_role == 'consultant' and username:
+                c.execute("UPDATE users SET temp_password=? WHERE username=?", (temp_password, username))
+                conn.commit()
+                print(f"Temporary password '{temp_password}' created for user '{username}'.")
+            elif creator_role == 'super_admin' or creator_role == 'system_admin':
+                c.execute("UPDATE users SET temp_password=?", (temp_password,))
+                conn.commit()
+                print(f"Temporary password '{temp_password}' created for all consultants.")
+                
+            return True
+        except sqlite3.Error as e:
+            print(f"SQLite error while creating temporary password: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def verify_temp_password(self, username, temp_password):
+        conn = sqlite3.connect(self.db_name)
+        c = conn.cursor()
+
+        try:
+            c.execute("SELECT username FROM users WHERE username=? AND temp_password=?", (username, temp_password))
+            user = c.fetchone()
+            if user:
+                return True
+            else:
+                return False
+        except sqlite3.Error as e:
+            print(f"SQLite error while verifying temporary password: {e}")
+            return False
+        finally:
+            conn.close()
 
     def is_valid_password(self, password):
         # Implement your password validation logic here
