@@ -1,5 +1,4 @@
 from auth import Auth
-from user import User
 from logger import Logger
 from backup import Backup
 from database import initialize_db, add_default_super_admin
@@ -37,61 +36,63 @@ def main():
 
             result = auth.login(username, password)
             if result is not None:
-                user = result
+                user_id, username, role = result  # Unpack the tuple returned by login
 
                 print(f"Attempting login with username: {username} and password: {'*'*len(password)}")
-                if user:
-                    print(f"Welcome {user['username']}")
-                    logger.log_activity(user['username'], "Logged in")
+                print(f"Welcome {username}")  # Use username directly
 
-                    while True:
-                        print("\nUser Menu:")
+                logger.log_activity(username, "Logged in")
+
+                while True:
+                    print("\nUser Menu:")
+                    if role == 'consultant':
                         print("1. Member Management")
-                        
-                        if user['role'] == 'system_admin' or user['role'] == 'super_admin':
-                            print("2. User Management")
-                            print("3. Create Backup")
-                            print("4. Restore Backup")
-                            print("5. View Logs")
-                            print("6. Print Log")
-
+                        print("2. Logout")
+                    elif role == 'system_admin' or role == 'super_admin':
+                        print("1. Member Management")
+                        print("2. User Management")
+                        print("3. Create Backup")
+                        print("4. Restore Backup")
+                        print("5. View Logs")
+                        print("6. Print Log")
                         print("7. Logout")
-                        
-                        choice = input("Enter choice: ")
 
-                        if choice == '1':
-                            member_manager.run_member_management()
+                    choice = input("Enter choice: ")
 
-                        elif choice == '2' and (user['role'] == 'system_admin' or user['role'] == 'super_admin'):
-                            user_manager.run_user_management()
-                            logger.log_activity(user['username'], "Accessed User Management")
+                    if choice == '1':
+                        member_manager.run_member_management()
 
-                        elif choice == '3' and (user['role'] == 'system_admin' or user['role'] == 'super_admin'):
-                            backup.create_backup()
-                            logger.log_activity(user['username'], "Created Backup")
+                    elif choice == '2' and role == 'consultant':
+                        logger.log_activity(username, "Logged out")
+                        break
 
-                        elif choice == '4' and (user['role'] == 'system_admin' or user['role'] == 'super_admin'):
-                            backup_name = input("Enter backup name: ")
-                            backup.restore_backup(backup_name)
-                            logger.log_activity(user['username'], "Restored Backup")
+                    elif choice == '2' and (role == 'system_admin' or role == 'super_admin'):
+                        user_manager.run_user_management()
+                        logger.log_activity(username, "Accessed User Management")
 
-                        elif choice == '5' and (user['role'] == 'system_admin' or user['role'] == 'super_admin'):
-                            logs = logger.fetch_logs()
-                            for log in logs:
-                                print(log)
+                    elif choice == '3' and (role == 'system_admin' or role == 'super_admin'):
+                        backup.create_backup()
+                        logger.log_activity(username, "Created Backup")
 
-                        elif choice == '6' and (user['role'] == 'system_admin' or user['role'] == 'super_admin'):
-                            print_log(logger)
+                    elif choice == '4' and (role == 'system_admin' or role == 'super_admin'):
+                        backup_name = input("Enter backup name: ")
+                        backup.restore_backup(backup_name)
+                        logger.log_activity(username, "Restored Backup")
 
-                        elif choice == '7':
-                            logger.log_activity(user['username'], "Logged out")
-                            break
+                    elif choice == '5' and (role == 'system_admin' or role == 'super_admin'):
+                        logs = logger.fetch_logs()
+                        for log in logs:
+                            print(log)
 
-                        else:
-                            print("Invalid choice")
+                    elif choice == '6' and (role == 'system_admin' or role == 'super_admin'):
+                        print_log(logger)
 
-                else:
-                    print("Login failed. Please check your credentials.")
+                    elif choice == '7':
+                        logger.log_activity(username, "Logged out")
+                        break
+
+                    else:
+                        print("Invalid choice")
 
             else:
                 print("Login failed. Please check your credentials.")

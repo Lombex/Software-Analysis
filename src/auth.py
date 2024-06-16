@@ -1,42 +1,47 @@
 import sqlite3
-import hashlib
+from hashlib import sha256
 
 class Auth:
     def __init__(self, db_name='unique_meal.db'):
         self.db_name = db_name
 
-    def hash_password(self, password):
-        return hashlib.sha256(password.encode()).hexdigest()
-
     def login(self, username, password):
-        print(f"Attempting login with username: {username} and password: {password}")
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
-        
-        try:
-            password_hash = self.hash_password(password)
-            c.execute("SELECT username, password_hash, role, first_name, last_name FROM users WHERE username = ?", (username,))
-            user = c.fetchone()  # Fetch single row
-            
-            if user and user[1] == password_hash:
-                user_info = {
-                    'username': user[0],
-                    'password_hash': user[1],
-                    'role': user[2],
-                    'first_name': user[3],
-                    'last_name': user[4]
-                }
-            else:
-                user_info = None
-            
-            return user_info
-        
-        except sqlite3.Error as e:
-            print(f"SQLite error occurred: {e}")
-            return None
-        
-        finally:
-            conn.close()
 
-    def is_super_admin(self, user):
-        return user and user['role'] == 'super_admin'
+        hashed_password = sha256(password.encode('utf-8')).hexdigest()
+        c.execute("SELECT id, username, role FROM users WHERE username=? AND password_hash=?", (username, hashed_password))
+        user = c.fetchone()
+
+        conn.close()
+        return user
+
+    def change_password(self, username, new_password):
+        conn = sqlite3.connect(self.db_name)
+        c = conn.cursor()
+
+        try:
+            hashed_password = sha256(new_password.encode('utf-8')).hexdigest()
+            c.execute("UPDATE users SET password_hash=? WHERE username=?", (hashed_password, username))
+            conn.commit()
+            conn.close()
+            return True
+        except sqlite3.Error as e:
+            print(f"SQLite error while updating password: {e}")
+            conn.close()
+            return False
+
+    def reset_password(self, username, temporary_password):
+        conn = sqlite3.connect(self.db_name)
+        c = conn.cursor()
+
+        try:
+            hashed_password = sha256(temporary_password.encode('utf-8')).hexdigest()
+            c.execute("UPDATE users SET password_hash=? WHERE username=?", (hashed_password, username))
+            conn.commit()
+            conn.close()
+            return True
+        except sqlite3.Error as e:
+            print(f"SQLite error while resetting password: {e}")
+            conn.close()
+            return False
