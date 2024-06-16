@@ -1,5 +1,4 @@
 from member import Member
-from datetime import datetime
 import sqlite3
 
 class MemberManager:
@@ -8,7 +7,6 @@ class MemberManager:
 
     def run_member_management(self):
         while True:
-            print("\nMember Management Menu:")
             print("1. Add Member")
             print("2. List Members")
             print("3. Search Members")
@@ -35,13 +33,72 @@ class MemberManager:
     def add_member(self):
         while True:
             try:
-                # Input for member details (first_name, last_name, age, gender, weight, address, email, phone)
-                # ... (same as before)
+                # Input for first_name
+                while True:
+                    first_name = input("First Name (at least 2 letters): ").strip()
+                    if len(first_name) >= 2 and first_name.isalpha():
+                        break
+                    else:
+                        print("Invalid input. First name must be at least 2 letters and only contain alphabetic characters.")
 
-                # Generate membership ID and add member
+                # Input for last_name
+                while True:
+                    last_name = input("Last Name (at least 2 letters): ").strip()
+                    if len(last_name) >= 2 and last_name.isalpha():
+                        break
+                    else:
+                        print("Invalid input. Last name must be at least 2 letters and only contain alphabetic characters.")
+
+                # Input for age
+                while True:
+                    try:
+                        age = int(input("Age (must be a positive integer): "))
+                        if age <= 0:
+                            print("Age must be a positive integer.")
+                        else:
+                            break
+                    except ValueError:
+                        print("Invalid input. Age must be a positive integer.")
+
+                # Input for gender
+                gender = input("Gender: ").strip()
+
+                # Input for weight
+                while True:
+                    try:
+                        weight = float(input("Weight (must be a positive number): "))
+                        if weight < 0:
+                            print("Weight must be a positive number.")
+                        else:
+                            break
+                    except ValueError:
+                        print("Invalid input. Weight must be a positive number.")
+
+                # Input for address
+                address = input("Address: ").strip()
+
+                # Input for email
+                while True:
+                    email = input("Email (must contain '@'): ").strip()
+                    if '@' in email:
+                        break
+                    else:
+                        print("Invalid input. Email must contain '@'.")
+
+                # Input for phone
+                while True:
+                    try:
+                        phone = int(input("Phone (must be a 10-digit number): "))
+                        if len(str(phone)) != 10:
+                            print("Invalid input. Phone must be exactly 10 digits long.")
+                        else:
+                            break
+                    except ValueError:
+                        print("Invalid input. Phone must be a number.")
+
+                # Generate membership ID
                 membership_id = self.member.add_member(first_name, last_name, age, gender, weight, address, email, phone)
-                if membership_id:
-                    print(f"Member added with Membership ID: {membership_id}")
+                print(f"Member added with Membership ID: {membership_id}")
                 break  # Break out of the loop if member is successfully added
 
             except ValueError as e:
@@ -59,9 +116,8 @@ class MemberManager:
     def list_members(self):
         members = self.member.list_members()
         if members:
-            print("\nList of Members:")
             for member in members:
-                print(f"Membership ID: {member[0]}, Name: {member[1]} {member[2]}, Age: {member[3]}, Gender: {member[4]}, Weight: {member[5]}, Address: {member[6]}, Email: {member[7]}, Phone: {member[8]}")
+                print(member)
         else:
             print("No members found.")
 
@@ -69,9 +125,8 @@ class MemberManager:
         search_key = input("Enter search key: ").strip().lower()  # Convert search key to lowercase for case-insensitive search
         members = self.member.search_members(search_key)
         if members:
-            print("\nSearch Results:")
             for member in members:
-                print(f"Membership ID: {member[0]}, Name: {member[1]} {member[2]}, Age: {member[3]}, Gender: {member[4]}, Weight: {member[5]}, Address: {member[6]}, Email: {member[7]}, Phone: {member[8]}")
+                print(member)
         else:
             print("No members found.")
 
@@ -80,7 +135,7 @@ class MemberManager:
             member_id = input("Enter member ID to update: ").strip()
             member = self.member.get_member(member_id)
             if member:
-                print("\nCurrent Member details:")
+                print("Current Member details:")
                 print(f"ID: {member[0]}, First Name: {member[1]}, Last Name: {member[2]}, Age: {member[3]}, Gender: {member[4]}, Weight: {member[5]}, Address: {member[6]}, Email: {member[7]}, Phone: {member[8]}")
 
                 first_name = input("Enter new first name (leave blank to keep current): ").strip()
