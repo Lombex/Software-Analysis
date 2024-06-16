@@ -24,7 +24,7 @@ def main():
     user_manager = UserManager(db_name)
 
     print("Welcome to Unique Meal Member Management System")
-
+    loginattempt = 0
     while True:
         print("\nMain Menu:")
         print("1. Login")
@@ -36,6 +36,16 @@ def main():
             username = input("Username: ")
             password = input("Password: ")
 
+            if loginattempt >= 3:
+                logger.log_activity(username, "Logged in", "High login frequency", "Yes")
+                print("To many login attempts reached!")
+                break
+
+            if logger.detect_sql_injection(username) or logger.detect_sql_injection(password):
+                logger.log_activity(username, "Login Attempt", "Possible SQL Injection", "Yes")
+                print("Suspicious activity detected. Action logged.")
+                continue
+
             result = auth.login(username, password)
             if result:
                 user_id, username, role = result  # Unpack the tuple returned by login
@@ -45,6 +55,7 @@ def main():
                 logger.log_activity(username, "Logged in")
 
                 if role == 'consultant':
+                    loginattempt = 0
                     while True:
                         print("\nConsultant Menu:")
                         print("1. Change Password")
@@ -72,7 +83,8 @@ def main():
                         else:
                             print("Invalid choice")
 
-                elif role == 'system_admin' or role == 'super_admin':
+                elif role == 'system_admin' or role == 'super_admin': 
+                    loginattempt = 0
                     while True:
                         print("\nAdministrator Menu:")
                         print("1. Change Password")
@@ -127,6 +139,7 @@ def main():
                             print("Invalid choice")
 
             else:
+                loginattempt += 1
                 print("Login failed. Please check your credentials.")
 
         elif choice == '2':
