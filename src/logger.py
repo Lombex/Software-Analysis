@@ -36,10 +36,32 @@ class Logger:
     def detect_sql_injection(self, input_string):
         # Added: Method to detect SQL injection
         sql_injection_patterns = [
-            r"(\%27)|(\')|(\-\-)|(\%23)|(#)",
-            r"(\%22)|(\")|(\%3B)|(;)",
-            r"(\%28)|(\()|(\%29)|(\))",
-            r"(\%20)|(\s)"
+            r"(\%27)|(\')|(\-\-)|(\%23)|(#)",  # Single quote, comment
+            r"(\%22)|(\")|(\%3B)|(;)",  # Double quote, semicolon
+            r"(\%28)|(\()|(\%29)|(\))",  # Parentheses
+            r"(\%20)|(\s)",  # Space
+            r"union\s+select",  # UNION SELECT
+            r"select\s+\*",  # SELECT *
+            r"insert\s+into",  # INSERT INTO
+            r"drop\s+table",  # DROP TABLE
+            r"update\s+set",  # UPDATE SET
+            r"delete\s+from",  # DELETE FROM
+            r"or\s+1=1",  # OR 1=1
+            r"or\s+'1'='1'",  # OR '1'='1'
+            r"--",  # Comment
+            r"xp_cmdshell",  # xp_cmdshell (SQL Server)
+            r"exec\s+\(",  # EXEC(
+            r"exec\s+",  # EXEC
+            r"union\s+all\s+select",  # UNION ALL SELECT
+            r"information_schema.tables",  # INFORMATION_SCHEMA
+            r"load_file\(",  # LOAD_FILE
+            r"into\s+outfile",  # INTO OUTFILE
+            r"benchmark\(",  # BENCHMARK
+            r"sleep\(",  # SLEEP
+            r"' or 'x'='x",  # ' OR 'x'='x
+            r"' OR '1",  # ' OR '1
+            r'" OR "1',  # " OR "1
+            r") OR (1=1",  # ) OR (1=1
         ]
         for pattern in sql_injection_patterns:
             if re.search(pattern, input_string, re.IGNORECASE):
