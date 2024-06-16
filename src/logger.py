@@ -1,5 +1,6 @@
 import sqlite3
 import datetime
+import re
 
 class Logger:
     def __init__(self, db_name='unique_meal.db'):
