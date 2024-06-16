@@ -19,6 +19,7 @@ def main():
     backup = Backup(db_name)
 
     print("Welcome to Unique Meal Member Management System")
+    loginattempt = 0
 
     while True:
         print("1. Login")
@@ -29,6 +30,11 @@ def main():
             username = input("Username: ")
             password = input("Password: ")  # Changed from getpass.getpass to input
 
+            if loginattempt >= 3:
+                logger.log_activity(username, "Logged in", "High login frequency", "Yes")
+                print("To many login attempts reached!")
+                break
+
             if logger.detect_sql_injection(username) or logger.detect_sql_injection(password):
                 # Added: Detect SQL injection in login inputs
                 logger.log_activity(username, "Login Attempt", "Possible SQL Injection", "Yes")
@@ -37,12 +43,8 @@ def main():
 
             user = auth.login(username, password)
             if user:
-                if logger.detect_suspicious_activity(username):
-                    # Added: Detect suspicious login activity
-                    logger.log_activity(username, "Logged in", "High login frequency", "Yes")
-                else:
-                    logger.log_activity(username, "Logged in")
-
+                logger.log_activity(username, "Logged in")
+                loginattempt = 0
                 print(f"Welcome {username}")
                 while True:
                     print("1. Add Member")
@@ -110,6 +112,7 @@ def main():
                         print("Invalid choice")
             else:
                 logger.log_activity(username, "Login Attempt", "Invalid credentials")
+                loginattempt += 1
                 print("Invalid credentials")
         elif choice == '2':
             print("Goodbye!")
