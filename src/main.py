@@ -5,7 +5,6 @@ from logger import Logger
 from backup import Backup
 from database import initialize_db, add_default_super_admin
 import os
-
 def main():
     db_name = 'unique_meal.db'
     sql_file = 'schema.sql'
@@ -30,10 +29,21 @@ def main():
             username = input("Username: ")
             password = input("Password: ")  # Changed from getpass.getpass to input
 
+            if logger.detect_sql_injection(username) or logger.detect_sql_injection(password):
+                # Added: Detect SQL injection in login inputs
+                logger.log_activity(username, "Login Attempt", "Possible SQL Injection", "Yes")
+                print("Suspicious activity detected. Action logged.")
+                continue
+
             user = auth.login(username, password)
             if user:
+                if logger.detect_suspicious_activity(username):
+                    # Added: Detect suspicious login activity
+                    logger.log_activity(username, "Logged in", "High login frequency", "Yes")
+                else:
+                    logger.log_activity(username, "Logged in")
+
                 print(f"Welcome {username}")
-                logger.log_activity(username, "Logged in")
                 while True:
                     print("1. Add Member")
                     print("2. Add User")
@@ -62,6 +72,12 @@ def main():
                             role = input("Role: ")
                             first_name = input("First Name: ")
                             last_name = input("Last Name: ")
+
+                            if logger.detect_sql_injection(username) or logger.detect_sql_injection(password):
+                                # Added: Detect SQL injection in add user inputs
+                                logger.log_activity(username, "Add User Attempt", "Possible SQL Injection", "Yes")
+                                print("Suspicious activity detected. Action logged.")
+                                continue
 
                             User.add_user(username, password, role, first_name, last_name, db_name)
                             logger.log_activity(username, "Added User")
@@ -93,6 +109,7 @@ def main():
                     else:
                         print("Invalid choice")
             else:
+                logger.log_activity(username, "Login Attempt", "Invalid credentials")
                 print("Invalid credentials")
         elif choice == '2':
             print("Goodbye!")
