@@ -2,14 +2,15 @@ from auth import Auth
 from logger import Logger
 from backup import Backup
 from database import initialize_db, add_default_super_admin
-import os
-
 from member_manager import MemberManager
 from user_manager import UserManager
+import os
 
 def main():
     db_name = 'unique_meal.db'
     sql_file = 'src/schema.sql'
+
+    # Initialize database if not exists
     if not os.path.exists(db_name):
         print("Initializing database...")
         initialize_db(db_name, sql_file)
@@ -28,6 +29,7 @@ def main():
         print("\nMain Menu:")
         print("1. Login")
         print("2. Exit")
+
         choice = input("Enter choice: ")
 
         if choice == '1':
@@ -35,64 +37,94 @@ def main():
             password = input("Password: ")
 
             result = auth.login(username, password)
-            if result is not None:
+            if result:
                 user_id, username, role = result  # Unpack the tuple returned by login
 
                 print(f"Attempting login with username: {username} and password: {'*'*len(password)}")
-                print(f"Welcome {username}")  # Use username directly
-
+                print(f"Welcome {username}")  # Print welcome message with username
                 logger.log_activity(username, "Logged in")
 
-                while True:
-                    print("\nUser Menu:")
-                    if role == 'consultant':
-                        print("1. Member Management")
-                        print("2. Logout")
-                    elif role == 'system_admin' or role == 'super_admin':
-                        print("1. Member Management")
-                        print("2. User Management")
-                        print("3. Create Backup")
-                        print("4. Restore Backup")
-                        print("5. View Logs")
-                        print("6. Print Log")
-                        print("7. Logout")
+                if role == 'consultant':
+                    while True:
+                        print("\nConsultant Menu:")
+                        print("1. Change Password")
+                        print("2. Member Management")
+                        print("3. Logout")
 
-                    choice = input("Enter choice: ")
+                        choice = input("Enter choice: ")
 
-                    if choice == '1':
-                        member_manager.run_member_management()
+                        if choice == '1':
+                            new_password = input("Enter new password: ")
+                            if auth.change_password(username, password, new_password):
+                                print("Password changed successfully.")
+                                logger.log_activity(username, "Changed their password")
+                            else:
+                                print("Failed to change password. Please try again.")
 
-                    elif choice == '2' and role == 'consultant':
-                        logger.log_activity(username, "Logged out")
-                        break
+                        elif choice == '2':
+                            member_manager.run_member_management()
+                            logger.log_activity(username, "Accessed Member Management")
 
-                    elif choice == '2' and (role == 'system_admin' or role == 'super_admin'):
-                        user_manager.run_user_management()
-                        logger.log_activity(username, "Accessed User Management")
+                        elif choice == '3':
+                            logger.log_activity(username, "Logged out")
+                            break
 
-                    elif choice == '3' and (role == 'system_admin' or role == 'super_admin'):
-                        backup.create_backup()
-                        logger.log_activity(username, "Created Backup")
+                        else:
+                            print("Invalid choice")
 
-                    elif choice == '4' and (role == 'system_admin' or role == 'super_admin'):
-                        backup_name = input("Enter backup name: ")
-                        backup.restore_backup(backup_name)
-                        logger.log_activity(username, "Restored Backup")
+                elif role == 'system_admin' or role == 'super_admin':
+                    while True:
+                        print("\nAdministrator Menu:")
+                        print("1. Change Password")
+                        print("2. Member Management")
+                        print("3. User Management")
+                        print("4. Create Backup")
+                        print("5. Restore Backup")
+                        print("6. View Logs")
+                        print("7. Print Log")
+                        print("8. Logout")
 
-                    elif choice == '5' and (role == 'system_admin' or role == 'super_admin'):
-                        logs = logger.fetch_logs()
-                        for log in logs:
-                            print(log)
+                        choice = input("Enter choice: ")
 
-                    elif choice == '6' and (role == 'system_admin' or role == 'super_admin'):
-                        print_log(logger)
+                        if choice == '1':
+                            new_password = input("Enter new password: ")
+                            if auth.change_password(username, password, new_password):
+                                print("Password changed successfully.")
+                                logger.log_activity(username, "Changed their password")
+                            else:
+                                print("Failed to change password. Please try again.")
 
-                    elif choice == '7':
-                        logger.log_activity(username, "Logged out")
-                        break
+                        elif choice == '2':
+                            member_manager.run_member_management()
+                            logger.log_activity(username, "Accessed Member Management")
 
-                    else:
-                        print("Invalid choice")
+                        elif choice == '3':
+                            user_manager.run_user_management()
+                            logger.log_activity(username, "Accessed User Management")
+
+                        elif choice == '4':
+                            backup.create_backup()
+                            logger.log_activity(username, "Created Backup")
+
+                        elif choice == '5':
+                            backup_name = input("Enter backup name: ")
+                            backup.restore_backup(backup_name)
+                            logger.log_activity(username, "Restored Backup")
+
+                        elif choice == '6':
+                            logs = logger.fetch_logs()
+                            for log in logs:
+                                print(log)
+
+                        elif choice == '7':
+                            print_log(logger)
+
+                        elif choice == '8':
+                            logger.log_activity(username, "Logged out")
+                            break
+
+                        else:
+                            print("Invalid choice")
 
             else:
                 print("Login failed. Please check your credentials.")

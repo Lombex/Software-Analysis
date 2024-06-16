@@ -130,3 +130,29 @@ class Member:
             conn.close()
 
         return member
+
+    def search_members(self, search_key):
+        conn = sqlite3.connect(self.db_name)
+        c = conn.cursor()
+
+        try:
+            # Execute SELECT query with LIKE clause for each field
+            c.execute("SELECT * FROM members WHERE "
+                      "membership_id LIKE ? OR "
+                      "LOWER(first_name) LIKE ? OR "
+                      "LOWER(last_name) LIKE ? OR "
+                      "LOWER(address) LIKE ? OR "
+                      "LOWER(email) LIKE ? OR "
+                      "phone LIKE ? OR "
+                      "LOWER(gender) LIKE ? OR "
+                      "weight LIKE ?",
+                      (f"%{search_key}%", f"%{search_key}%", f"%{search_key}%", f"%{search_key}%", f"%{search_key}%", f"%{search_key}%", f"%{search_key}%", f"%{search_key}%"))
+
+            members = c.fetchall()
+        except sqlite3.Error as e:
+            print(f"SQLite error while searching members: {e}")
+            members = []
+        finally:
+            conn.close()
+
+        return members
