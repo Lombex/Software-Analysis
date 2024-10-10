@@ -1,3 +1,4 @@
+import datetime
 def validate_username(username):
     """
     Validate username based on specified criteria:
@@ -124,3 +125,21 @@ def validate_phone(phone):
     if len(str(phone)) != 8:
         return False
     return True
+
+def validate_membership_id(membership_id):
+    if len(membership_id) != 10:
+        return False, "Invalid length"
+    
+    id_digits = [int(digit) for digit in membership_id]
+    year = int(membership_id[:2])
+    current_year = datetime.datetime.now().year % 100
+
+    if year > current_year:
+        return False, f"Invalid year {year}, we are still in {current_year}"
+    
+    checksum = id_digits[-1]
+    calculated_checksum = sum(id_digits[:-1]) % 10
+
+    if checksum != calculated_checksum:
+        return False, f"Checksum mismatch. Expected {calculated_checksum} but found {checksum}"
+    return True, "Valid ID"

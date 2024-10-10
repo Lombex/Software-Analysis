@@ -1,24 +1,29 @@
 import sqlite3
+import random
 from datetime import datetime
+from validation import validate_membership_id
 
 class Member:
     def __init__(self, db_name='unique_meal.db'):
         self.db_name = db_name
-
-    def generate_membership_id(self):
-        current_year = datetime.now().year
-        return f"{current_year % 100:02d}{datetime.now().strftime('%m%d%H%M%S')}"
 
     def add_member(self, first_name, last_name, age, gender, weight, address, email, phone):
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
         
         # Generate membership ID
-        membership_id = self.generate_membership_id()
+        current_year = datetime.now().year % 100
+        id_digits = [int(digit) for digit in str(current_year)]
+        for _ in range(7):
+            id_digits.append(random.randint(0, 9))
+        checksum = sum(id_digits) % 10
+        id_digits.append(checksum)
+        membership_id = ''.join(map(str, id_digits))
+        print("Generated ID:", membership_id)
 
         # Calculate checksum
-        checksum = sum(int(digit) for digit in membership_id[:9]) % 10
-        membership_id += str(checksum)
+        is_valid, message = validate_membership_id(membership_id)
+        print(f"Validation result: {is_valid}, {message}")
 
         try:
             # Insert member into database
