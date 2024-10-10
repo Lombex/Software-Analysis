@@ -1,88 +1,111 @@
 import sqlite3
 from datetime import datetime
+from validation import validate_input
+import base64
+import os
 
 class Member:
     def __init__(self, db_name='unique_meal.db'):
         self.db_name = db_name
+        self.salt = self.load_or_generate_salt()
+
+    def load_or_generate_salt(self):
+        salt_file = 'member_salt.bin'
+        if os.path.exists(salt_file):
+            with open(salt_file, 'rb') as file:
+                return file.read()
+        else:
+            salt = os.urandom(16)
+            with open(salt_file, 'wb') as file:
+                file.write(salt)
+            return salt
+
+    def encrypt(self, data):
+        return base64.b64encode(bytes([b ^ self.salt[i % len(self.salt)] for i, b in enumerate(data.encode())])).decode()
+
+    def decrypt(self, data):
+        decoded = base64.b64decode(data.encode())
+        return bytes([b ^ self.salt[i % len(self.salt)] for i, b in enumerate(decoded)]).decode()
 
     def generate_membership_id(self):
         current_year = datetime.now().year
-        return f"{current_year % 100:02d}{datetime.now().strftime('%m%d%H%M%S')}"
+        base_id = f"{current_year % 100:02d}{datetime.now().strftime('%m%d%H%M%S')}"
+        checksum = sum(int(digit) for digit in base_id) % 10
+        return f"{base_id}{checksum}"
 
     def add_member(self, first_name, last_name, age, gender, weight, address, email, phone):
+        if not all([
+            validate_input('name', first_name),
+            validate_input('name', last_name),
+            validate_input('age', age),
+            validate_input('weight', weight),
+            validate_input('email', email),
+            validate_input('phone', phone)
+        ]):
+            return None, "Invalid input. Please check your entries."
+
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
         
-        # Generate membership ID
         membership_id = self.generate_membership_id()
 
-        # Calculate checksum
-        checksum = sum(int(digit) for digit in membership_id[:9]) % 10
-        membership_id += str(checksum)
-
         try:
-            # Insert member into database
-            c.execute("INSERT INTO members (membership_id, first_name, last_name, age, gender, weight, address, email, phone, registration_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                      (membership_id, first_name, last_name, age, gender, weight, address, email, phone, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+            c.execute("""
+                INSERT INTO members 
+                (membership_id, first_name, last_name, age, gender, weight, address, email, phone, registration_date) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                membership_id, 
+                self.encrypt(first_name), 
+                self.encrypt(last_name), 
+                age, 
+                gender, 
+                weight, 
+                self.encrypt(address), 
+                self.encrypt(email), 
+                self.encrypt(phone), 
+                datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            ))
             conn.commit()
+            return membership_id, "Member added successfully."
         except sqlite3.Error as e:
-            print(f"SQLite error while inserting member: {e}")
-            membership_id = None  # Return None if insertion fails
+            return None, f"Database error: {e}"
         finally:
             conn.close()
-        
-        return membership_id
 
-    def update_member(self, membership_id, first_name=None, last_name=None, age=None, gender=None, weight=None, address=None, email=None, phone=None):
+    def update_member(self, membership_id, **kwargs):
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
 
-        # Check if all fields are None or empty
-        if all(value is None or value == "" for value in (first_name, last_name, age, gender, weight, address, email, phone)):
-            conn.close()
-            print("No fields provided for update.")
-            return
-
         try:
-            # Create SET clause based on provided fields
-            set_clause = []
+            current_data, _ = self.get_member(membership_id)
+            if not current_data:
+                return False, "Member not found."
+
+            update_fields = []
             values = []
 
-            if first_name is not None and first_name != "":
-                set_clause.append("first_name = ?")
-                values.append(first_name)
-            if last_name is not None and last_name != "":
-                set_clause.append("last_name = ?")
-                values.append(last_name)
-            if age is not None and age != "":
-                set_clause.append("age = ?")
-                values.append(int(age))
-            if gender is not None and gender != "":
-                set_clause.append("gender = ?")
-                values.append(gender)
-            if weight is not None and weight != "":
-                set_clause.append("weight = ?")
-                values.append(float(weight))
-            if address is not None and address != "":
-                set_clause.append("address = ?")
-                values.append(address)
-            if email is not None and email != "":
-                set_clause.append("email = ?")
-                values.append(email)
-            if phone is not None and phone != "":
-                set_clause.append("phone = ?")
-                values.append(phone)
+            for key, value in kwargs.items():
+                if value is not None:
+                    if key in ['first_name', 'last_name', 'address', 'email', 'phone']:
+                        if validate_input(key, value):
+                            update_fields.append(f"{key} = ?")
+                            values.append(self.encrypt(value))
+                    elif key in ['age', 'gender', 'weight']:
+                        if validate_input(key, value):
+                            update_fields.append(f"{key} = ?")
+                            values.append(value)
 
-            # Add membership_id to values
+            if not update_fields:
+                return False, "No valid fields to update."
+
             values.append(membership_id)
-
-            # Construct and execute the UPDATE query
-            set_clause = ", ".join(set_clause)
-            query = f"UPDATE members SET {set_clause} WHERE membership_id = ?"
+            query = f"UPDATE members SET {', '.join(update_fields)} WHERE membership_id = ?"
             c.execute(query, values)
             conn.commit()
+            return True, "Member updated successfully."
         except sqlite3.Error as e:
-            print(f"SQLite error while updating member: {e}")
+            return False, f"Database error: {e}"
         finally:
             conn.close()
 
@@ -91,11 +114,13 @@ class Member:
         c = conn.cursor()
 
         try:
-            # Execute DELETE query
             c.execute("DELETE FROM members WHERE membership_id=?", (membership_id,))
+            if c.rowcount == 0:
+                return False, "Member not found."
             conn.commit()
+            return True, "Member deleted successfully."
         except sqlite3.Error as e:
-            print(f"SQLite error while deleting member: {e}")
+            return False, f"Database error: {e}"
         finally:
             conn.close()
 
@@ -104,55 +129,62 @@ class Member:
         c = conn.cursor()
 
         try:
-            # Execute SELECT query
             c.execute("SELECT * FROM members")
             members = c.fetchall()
+            decrypted_members = []
+            for member in members:
+                decrypted_member = list(member)
+                for i in [1, 2, 6, 7, 8]:  # indexes of encrypted fields
+                    decrypted_member[i] = self.decrypt(decrypted_member[i])
+                decrypted_members.append(tuple(decrypted_member))
+            return decrypted_members, "Members retrieved successfully."
         except sqlite3.Error as e:
-            print(f"SQLite error while fetching members: {e}")
-            members = []
+            return [], f"Database error: {e}"
         finally:
             conn.close()
-
-        return members
 
     def get_member(self, membership_id):
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
 
         try:
-            # Execute SELECT query
             c.execute("SELECT * FROM members WHERE membership_id=?", (membership_id,))
             member = c.fetchone()
+            if member:
+                decrypted_member = list(member)
+                for i in [1, 2, 6, 7, 8]:  # indexes of encrypted fields
+                    decrypted_member[i] = self.decrypt(decrypted_member[i])
+                return tuple(decrypted_member), "Member retrieved successfully."
+            else:
+                return None, "Member not found."
         except sqlite3.Error as e:
-            print(f"SQLite error while fetching member: {e}")
-            member = None
+            return None, f"Database error: {e}"
         finally:
             conn.close()
-
-        return member
 
     def search_members(self, search_key):
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
 
         try:
-            # Execute SELECT query with LIKE clause for each field
-            c.execute("SELECT * FROM members WHERE "
-                      "membership_id LIKE ? OR "
-                      "LOWER(first_name) LIKE ? OR "
-                      "LOWER(last_name) LIKE ? OR "
-                      "LOWER(address) LIKE ? OR "
-                      "LOWER(email) LIKE ? OR "
-                      "phone LIKE ? OR "
-                      "LOWER(gender) LIKE ? OR "
-                      "weight LIKE ?",
-                      (f"%{search_key}%", f"%{search_key}%", f"%{search_key}%", f"%{search_key}%", f"%{search_key}%", f"%{search_key}%", f"%{search_key}%", f"%{search_key}%"))
-
+            c.execute("""
+                SELECT * FROM members WHERE 
+                membership_id LIKE ? OR 
+                first_name LIKE ? OR 
+                last_name LIKE ? OR 
+                address LIKE ? OR 
+                email LIKE ? OR 
+                phone LIKE ?
+            """, ('%' + search_key + '%',) * 6)
             members = c.fetchall()
+            decrypted_members = []
+            for member in members:
+                decrypted_member = list(member)
+                for i in [1, 2, 6, 7, 8]:  # indexes of encrypted fields
+                    decrypted_member[i] = self.decrypt(decrypted_member[i])
+                decrypted_members.append(tuple(decrypted_member))
+            return decrypted_members, "Search completed successfully."
         except sqlite3.Error as e:
-            print(f"SQLite error while searching members: {e}")
-            members = []
+            return [], f"Database error: {e}"
         finally:
             conn.close()
-
-        return members
