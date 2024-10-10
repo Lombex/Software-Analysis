@@ -1,218 +1,131 @@
+# user.py
+
 import sqlite3
 import hashlib
-import base64
-import os
 from datetime import datetime
-from validation import validate_input, detect_suspicious_input
+from validation import validate_username, validate_password
 
 class User:
-    def __init__(self, db_name='unique_meal.db'):
-        self.db_name = db_name
-        self.salt = self.load_or_generate_salt()
-
-    def load_or_generate_salt(self):
-        salt_file = 'user_salt.bin'
-        if os.path.exists(salt_file):
-            with open(salt_file, 'rb') as file:
-                return file.read()
-        else:
-            salt = os.urandom(16)
-            with open(salt_file, 'wb') as file:
-                file.write(salt)
-            return salt
-
-    def encrypt(self, data):
-        return base64.b64encode(bytes([b ^ self.salt[i % len(self.salt)] for i, b in enumerate(data.encode())]))
-
-    def decrypt(self, data):
-        decoded = base64.b64decode(data)
-        return bytes([b ^ self.salt[i % len(self.salt)] for i, b in enumerate(decoded)]).decode()
-
-    def hash_password(self, password):
-        return hashlib.sha256(password.encode() + self.salt).hexdigest()
-
     @staticmethod
     def add_user(username, password, role, first_name, last_name, db_name='unique_meal.db'):
-        if not all([
-            validate_input('username', username),
-            validate_input('password', password),
-            validate_input('name', first_name),
-            validate_input('name', last_name)
-        ]):
-            return False, "Invalid input. Please check your entries."
+        # Validate inputs
+        if not (validate_username(username) and validate_password(password)):
+            print("Invalid input. Username or password does not meet criteria.")
+            return
 
-        if any(detect_suspicious_input(i) for i in [username, password, first_name, last_name]):
-            return False, "Suspicious input detected. User creation aborted."
-
-        user = User(db_name)
-        hashed_password = user.encrypt(user.hash_password(password))
-        
+        # Function to add a new user
+        password_hash = hashlib.sha256(password.encode()).hexdigest()
         conn = sqlite3.connect(db_name)
         c = conn.cursor()
         try:
-            c.execute("""
-                INSERT INTO users (username, password_hash, role, first_name, last_name, registration_date) 
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (
-                username, 
-                hashed_password, 
-                role, 
-                user.encrypt(first_name).decode(), 
-                user.encrypt(last_name).decode(), 
-                datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            ))
+            c.execute("INSERT INTO users (username, password_hash, role, first_name, last_name, registration_date) VALUES (?, ?, ?, ?, ?, ?)",
+                      (username, password_hash, role, first_name, last_name, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
             conn.commit()
-            return True, "User added successfully."
+            print("User added successfully.")
         except sqlite3.Error as e:
-            return False, f"SQLite error while inserting user: {e}"
+            print(f"SQLite error while inserting user: {e}")
         finally:
             conn.close()
 
     @staticmethod
     def authenticate_user(username, password, db_name='unique_meal.db'):
-        # Check for suspicious input
-        if detect_suspicious_input(username) or detect_suspicious_input(password):
-            return None, "Suspicious input detected. Authentication aborted."
-    
+        # Function to authenticate a user
+        password_hash = hashlib.sha256(password.encode()).hexdigest()
         conn = sqlite3.connect(db_name)
         c = conn.cursor()
-        try:
-            # Fetch user data including the hashed password and salt
-            c.execute("SELECT password_hash, salt FROM users WHERE username=?", (username,))
-            db_user = c.fetchone()
-            
-            if db_user:
-                stored_hash, salt = db_user
-                
-                # Hash the provided password with the retrieved salt
-                hashed_password = hashlib.sha256(password.encode() + salt).hexdigest()
-                
-                # Compare the hashed password with the stored hash
-                if hashed_password == stored_hash:
-                    return db_user, "Authentication successful."
-                else:
-                    return None, "Invalid username or password."
-            else:
-                return None, "User not found."
-        except sqlite3.Error as e:
-            return None, f"Database error: {e}"
-        finally:
-            conn.close()
-
+        c.execute("SELECT * FROM users WHERE username=? AND password_hash=?", (username, password_hash))
+        user = c.fetchone()
+        conn.close()
+        return user  # Returns None if no user found, otherwise returns user details tuple
 
     @staticmethod
     def update_user(username, password=None, role=None, first_name=None, last_name=None, db_name='unique_meal.db'):
-        user = User(db_name)
+        # Validate password if provided
+        if password and not validate_password(password):
+            print("Invalid input. Password must adhere to the specified format.")
+            return
+    
         conn = sqlite3.connect(db_name)
         c = conn.cursor()
         try:
             update_fields = []
             values = []
-
-            if password and validate_input('password', password):
-                if detect_suspicious_input(password):
-                    return False, "Suspicious input detected in password. Update aborted."
-                hashed_password = user.encrypt(user.hash_password(password))
+    
+            if password:
+                password_hash = hashlib.sha256(password.encode()).hexdigest()
                 update_fields.append("password_hash = ?")
-                values.append(hashed_password)
+                values.append(password_hash)
             if role:
-                if detect_suspicious_input(role):
-                    return False, "Suspicious input detected in role. Update aborted."
                 update_fields.append("role = ?")
                 values.append(role)
-            if first_name and validate_input('name', first_name):
-                if detect_suspicious_input(first_name):
-                    return False, "Suspicious input detected in first name. Update aborted."
+            if first_name:
                 update_fields.append("first_name = ?")
-                values.append(user.encrypt(first_name).decode())
-            if last_name and validate_input('name', last_name):
-                if detect_suspicious_input(last_name):
-                    return False, "Suspicious input detected in last name. Update aborted."
+                values.append(first_name)
+            if last_name:
                 update_fields.append("last_name = ?")
-                values.append(user.encrypt(last_name).decode())
-
-            if not update_fields:
-                return False, "No valid fields to update."
-
+                values.append(last_name)
+    
             values.append(username)
             set_clause = ", ".join(update_fields)
+            print(f"Updating user {username} with set clause: {set_clause} and values: {values}")  # Debug statement
             c.execute(f"UPDATE users SET {set_clause} WHERE username = ?", values)
             conn.commit()
-            return True, "User updated successfully."
+            print("User updated successfully.")
         except sqlite3.Error as e:
-            return False, f"SQLite error while updating user: {e}"
+            print(f"SQLite error while updating user: {e}")
         finally:
             conn.close()
 
     @staticmethod
     def delete_user(username, db_name='unique_meal.db'):
-        if detect_suspicious_input(username):
-            return False, "Suspicious input detected. Deletion aborted."
-
+        # Function to delete a user
         conn = sqlite3.connect(db_name)
         c = conn.cursor()
         try:
             c.execute("DELETE FROM users WHERE username=?", (username,))
-            if c.rowcount == 0:
-                return False, "User not found."
             conn.commit()
-            return True, "User deleted successfully."
+            print("User deleted successfully.")
         except sqlite3.Error as e:
-            return False, f"SQLite error while deleting user: {e}"
-        finally:
-            conn.close()
-
-    @staticmethod
-    def get_user(username, db_name='unique_meal.db'):
-        if detect_suspicious_input(username):
-            return None, "Suspicious input detected. Retrieval aborted."
-
-        user = User(db_name)
-        conn = sqlite3.connect(db_name)
-        c = conn.cursor()
-        try:
-            c.execute("SELECT * FROM users WHERE username=?", (username,))
-            db_user = c.fetchone()
-            if db_user:
-                decrypted_user = list(db_user)
-                decrypted_user[4] = user.decrypt(decrypted_user[4])  # Decrypt first_name
-                decrypted_user[5] = user.decrypt(decrypted_user[5])  # Decrypt last_name
-                return tuple(decrypted_user), "User retrieved successfully."
-            else:
-                return None, "User not found."
-        except sqlite3.Error as e:
-            return None, f"Database error: {e}"
-        finally:
-            conn.close()
-
-    @staticmethod
-    def list_users(db_name='unique_meal.db'):
-        user = User(db_name)
-        conn = sqlite3.connect(db_name)
-        c = conn.cursor()
-        try:
-            c.execute("SELECT id, username, role, first_name, last_name, registration_date FROM users")
-            users = c.fetchall()
-            decrypted_users = []
-            for db_user in users:
-                decrypted_user = list(db_user)
-                decrypted_user[3] = user.decrypt(decrypted_user[3])  # Decrypt first_name
-                decrypted_user[4] = user.decrypt(decrypted_user[4])  # Decrypt last_name
-                decrypted_users.append(tuple(decrypted_user))
-            return decrypted_users, "Users retrieved successfully."
-        except sqlite3.Error as e:
-            return [], f"Database error: {e}"
+            print(f"SQLite error while deleting user: {e}")
         finally:
             conn.close()
 
     @staticmethod
     def is_consultant(user):
+        # Check if user is a consultant
         return user and user[3] == 'consultant'
 
     @staticmethod
     def is_system_admin(user):
+        # Check if user is a system administrator
         return user and user[3] == 'system_admin'
 
     @staticmethod
     def is_super_admin(user):
+        # Check if user is a super administrator
         return user and user[3] == 'super_admin'
+
+    @staticmethod
+    def can_add_member(user):
+        # Check if user can add a new member
+        return User.is_consultant(user) or User.is_system_admin(user) or User.is_super_admin(user)
+
+    @staticmethod
+    def can_update_member(user):
+        # Check if user can update member information
+        return User.is_consultant(user) or User.is_system_admin(user) or User.is_super_admin(user)
+
+    @staticmethod
+    def can_delete_member(user):
+        # Check if user can delete a member
+        return User.is_system_admin(user) or User.is_super_admin(user)
+
+    @staticmethod
+    def can_view_logs(user):
+        # Check if user can view system logs
+        return User.is_system_admin(user) or User.is_super_admin(user)
+
+    @staticmethod
+    def can_make_backup(user):
+        # Check if user can make a backup of the system
+        return User.is_system_admin(user) or User.is_super_admin(user)

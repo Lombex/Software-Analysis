@@ -1,52 +1,41 @@
-def validate_input(input_type, value):
-    if input_type == 'username':
-        return validate_username(value)
-    elif input_type == 'password':
-        return validate_password(value)
-    elif input_type == 'email':
-        return validate_email(value)
-    elif input_type == 'age':
-        return validate_age(value)
-    elif input_type == 'weight':
-        return validate_weight(value)
-    elif input_type == 'phone':
-        return validate_phone(value)
-    elif input_type == 'name':
-        return validate_name(value)
-    elif input_type == 'zip_code':
-        return validate_zip_code(value)
-    else:
-        return False
-
 def validate_username(username):
-    # Allow usernames between 8 and 20 characters
-    if len(username) < 8 or len(username) > 20:
+    """
+    Validate username based on specified criteria:
+    - Starts with a letter or underscore
+    - 8 to 10 characters long
+    - Allows letters, numbers, underscores, periods, apostrophes ( ' . _ 0 a )
+    """
+    if not (8 <= len(username) <= 10):
+        print("Username should be between 8 and 10 characters long.")
         return False
     
-    # The first character must be alphabetic or an underscore
     if not (username[0].isalpha() or username[0] == '_'):
+        print("Username should start with a letter or underscore.")
         return False
     
-    # Valid characters are alphabets, digits, underscores, dots, and single quotes
-    allowed_chars = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.'")
-    
-    # Ensure every character is valid
+    allowed_characters = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.'")
     for char in username:
-        if char not in allowed_chars:
+        if char not in allowed_characters:
+            print("Username can only contain letters, numbers, underscores, periods, and apostrophes.")
             return False
     
     return True
 
+def validate_name(name):
+    if len(name) >= 2 and name.isalpha():
+        return True
+    return False
+
 def validate_password(password):
     """
     Validate password based on specified criteria:
-    - At least 10 characters long
+    - At least 12 characters long
     - Contains at least one lowercase letter
     - Contains at least one uppercase letter
     - Contains at least one digit
     - Contains at least one special character from ~!@#$%&_-+=`|(){}[]:;'<>,.?/
     """
-    if len(password) < 10:
+    if len(password) < 12:
         return "Password must be at least 12 characters long."
     
     has_lower = False
@@ -82,65 +71,56 @@ def validate_password(password):
     return True
 
 def validate_email(email):
-    # Simplified email validation without regex
-    if "@" not in email or "." not in email:
+    """
+    Validate email address based on a basic format:
+    - Contains exactly one '@' symbol
+    - Has a domain part after '@' with at least one dot ('.')
+    - There must be characters before '@', and the domain name and extension should not be empty
+    """
+    if email.count('@') != 1:
+        print("Email must contain exactly one '@' symbol.")
         return False
-    local, domain = email.split('@', 1)
-    if len(local) < 1 or len(domain) < 3 or '.' not in domain:
+    local_part, domain_part = email.split('@')
+
+    if not local_part:
+        print("Email local part (before '@') cannot be empty.")
         return False
+    
+    if '.' not in domain_part:
+        print("Email domain part must contain at least one '.' symbol.")
+        return False
+    
+    domain_name, *domain_extension = domain_part.split('.')
+    if not domain_name or not all(domain_extension):
+        print("Domain name and extension cannot be empty.")
+        return False
+
     return True
 
 def validate_age(age):
+    """
+    Validate age as a positive integer
+    """
     try:
         age = int(age)
-        return 0 < age < 150
+        return age > 0
     except ValueError:
         return False
 
 def validate_weight(weight):
+    """
+    Validate weight as a positive float
+    """
     try:
         weight = float(weight)
-        return 0 < weight < 1000
+        return weight > 0
     except ValueError:
         return False
 
 def validate_phone(phone):
-    # Dutch phone number format: +31-6-DDDDDDDD
-    if not phone.startswith("+31-6-"):
+    """
+    Validate phone number as a 10-digit string
+    """
+    if len(str(phone)) != 10:
         return False
-    phone_number = phone[6:]  # Extract number after +31-6-
-    
-    # Ensure there are exactly 8 digits after +31-6-
-    return len(phone_number) == 8 and phone_number.isdigit()
-
-def validate_name(name):
-    # Ensure name is at least 2 characters and contains only alphabetic characters
-    return len(name) >= 2 and name.isalpha()
-
-def validate_zip_code(zip_code):
-    # Dutch zip code format: 4 digits followed by 2 letters
-    if len(zip_code) != 6:
-        return False
-    
-    digits_part = zip_code[:4]
-    letters_part = zip_code[4:]
-    
-    # Check if first part is digits and second part is letters
-    return digits_part.isdigit() and letters_part.isalpha() and letters_part.isupper()
-
-def validate_city(city, valid_cities):
-    return city in valid_cities
-
-def detect_suspicious_input(input_string):
-    suspicious_patterns = [
-        "SELECT", "INSERT", "UPDATE", "DELETE", "DROP", "UNION", "FROM", "WHERE",
-        "--", "/*", "*/", "@@", "@", "CHAR(", "DECLARE", "CAST(", "CONVERT(",
-        "EXEC(", ";", "'+", "\"", "OR 1=1", "OR '1'='1", "INFORMATION_SCHEMA",
-        "LOAD_FILE", "INTO OUTFILE"
-    ]
-    # Check for suspicious patterns in a case-insensitive manner
-    input_lower = input_string.lower()
-    for pattern in suspicious_patterns:
-        if pattern.lower() in input_lower:
-            return True
-    return False
+    return True
