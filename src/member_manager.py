@@ -94,13 +94,29 @@ class MemberManager:
         if self.current_user_role not in ['consultant', 'system_admin', 'super_admin']:
             print("You don't have permission to search members.")
             return
-        search_key = self.input_validator.get_validated_input("Enter search key: ", 'search', self.current_username)
-        members = self.member.search_members(search_key)
-        if members:
-            for member in members:
-                print(member)
-        else:
-            print("No members found.")
+        try:
+            search_key = self.input_validator.get_validated_input("Enter search key: ", 'search', self.current_username)
+            members = self.member.search_members(search_key)
+            print(f"Fetched {len(members)} matching members.")  # Debug print
+
+            if members:
+                for member in members:
+                    # Unpack member details from the tuple
+                    member_id, first_name, last_name, age, gender, weight, address, email, phone, registration_date, membership_id = member
+                    
+                    # Format the phone number
+                    formatted_phone = f"+31-6-{phone}"
+
+                    # Print member details on two lines next to each other
+                    print(f"ID: {member_id}, Name: {first_name} {last_name}, Age: {age}, Gender: {gender}, Weight: {weight}kg, Address: {address}")
+                    print(f"Email: {email}, Phone: {formatted_phone}, Registered: {registration_date}, Membership ID: {membership_id}")
+                    print("-" * 80)  # Separator for clarity
+            else:
+                print("No members found.")
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
     def update_member(self):
         if self.current_user_role not in ['system_admin', 'super_admin']:
