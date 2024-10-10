@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('super_admin', 'admin', 'consultant', 'user')),
+    role INTEGER NOT NULL CHECK (role IN (1, 2, 3, 4)),  -- 1: super_admin, 2: admin, 3: consultant, 4: user
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
     registration_date DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -35,4 +35,3 @@ CREATE TABLE IF NOT EXISTS logs (
     suspicious TEXT CHECK (suspicious IN ('Yes', 'No')),
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
 );
-

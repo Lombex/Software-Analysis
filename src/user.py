@@ -70,18 +70,25 @@ class User:
 
     @staticmethod
     def authenticate_user(username, password, db_name='unique_meal.db'):
+        # Check for suspicious input
         if detect_suspicious_input(username) or detect_suspicious_input(password):
             return None, "Suspicious input detected. Authentication aborted."
-
-        user = User(db_name)
+    
         conn = sqlite3.connect(db_name)
         c = conn.cursor()
         try:
-            c.execute("SELECT * FROM users WHERE username=?", (username,))
+            # Fetch user data including the hashed password and salt
+            c.execute("SELECT password_hash, salt FROM users WHERE username=?", (username,))
             db_user = c.fetchone()
+            
             if db_user:
-                stored_hash = user.decrypt(db_user[2])
-                if user.hash_password(password) == stored_hash:
+                stored_hash, salt = db_user
+                
+                # Hash the provided password with the retrieved salt
+                hashed_password = hashlib.sha256(password.encode() + salt).hexdigest()
+                
+                # Compare the hashed password with the stored hash
+                if hashed_password == stored_hash:
                     return db_user, "Authentication successful."
                 else:
                     return None, "Invalid username or password."
@@ -91,6 +98,7 @@ class User:
             return None, f"Database error: {e}"
         finally:
             conn.close()
+
 
     @staticmethod
     def update_user(username, password=None, role=None, first_name=None, last_name=None, db_name='unique_meal.db'):

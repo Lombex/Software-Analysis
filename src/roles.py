@@ -1,15 +1,18 @@
 from enum import Enum
 
 class Role(Enum):
-    SUPER_ADMIN = 'super_admin'
-    ADMIN = 'admin'
-    CONSULTANT = 'consultant'
-    USER = 'user'
+    SUPER_ADMIN = 1
+    ADMIN = 2
+    CONSULTANT = 3
+    USER = 4
 
-    @classmethod
-    def from_string(cls, role_str):
-        """Convert a string to a Role enum."""
-        try:
-            return cls[role_str.upper()]
-        except KeyError:
-            raise ValueError(f"{role_str} is not a valid Role")
+    @staticmethod
+    def from_string(role_string):
+        """Convert string to Role enum."""
+        role_mapping = {
+            'super_admin': Role.SUPER_ADMIN,
+            'admin': Role.ADMIN,
+            'consultant': Role.CONSULTANT,
+            'user': Role.USER
+        }
+        return role_mapping.get(role_string.lower(), None)

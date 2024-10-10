@@ -44,37 +44,39 @@ class Auth:
             print(f"Database error while adding user: {e}")
         finally:
             conn.close()
-
+    
     def login(self, username, password):
         """Authenticate user by validating input and checking credentials."""
         # Validate input
         if not all([validate_input('username', username), validate_input('password', password)]):
             return None, "Invalid input. Please check your credentials."
-
+    
         # Check for suspicious inputs
         if detect_suspicious_input(username) or detect_suspicious_input(password):
             return None, "Suspicious input detected. Authentication aborted."
-
+    
         # Check if the account is locked due to too many failed attempts
         if self.is_account_locked(username):
             return None, "Account is temporarily locked. Please try again later."
-
+    
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
-
+    
         try:
             # Query to retrieve user credentials from the database
             c.execute("SELECT id, username, role, password_hash, salt FROM users WHERE username=?", (username,))
             user = c.fetchone()
-
+    
             # If user is found
             if user:
                 user_id, username, role_value, stored_password_hash, salt = user
-                role = Role(role_value)  # Convert integer to Role Enum
-
+    
+                # Convert string to Role Enum
+                role = Role.from_string(role_value)  # Use the from_string method
+    
                 # Hash the entered password with the stored salt
                 hashed_password = self.hash_password(password, salt)
-
+    
                 # If hashed passwords match, login successful
                 if hashed_password == stored_password_hash:
                     self.reset_attempts(username)
@@ -86,9 +88,11 @@ class Auth:
                 self.increment_attempts(username)
                 return None, "Invalid username or password."
         except sqlite3.Error as e:
-            return None, f"Database error: {e}"
+            print(f"Database error: {e}")  # Logging error for debugging
+            return None, "Database error occurred. Please try again."
         finally:
             conn.close()
+
 
     def is_account_locked(self, username):
         """Check if a user's account is locked due to too many failed login attempts."""

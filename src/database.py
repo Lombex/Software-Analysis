@@ -2,6 +2,7 @@ import sqlite3
 import hashlib
 import base64
 import os
+import roles
 
 def load_or_generate_salt():
     salt_file = 'db_salt.bin'
@@ -41,7 +42,7 @@ def add_default_super_admin(db_name):
         
         username = "super_admin"
         password = "Admin_123?"
-        role = "super_admin"
+        role = roles.Enum;1  # Use the integer value from the Role enum
         first_name = "Admin"
         last_name = "User"
 
@@ -50,10 +51,10 @@ def add_default_super_admin(db_name):
         encrypted_first_name = encrypt(first_name, salt)
         encrypted_last_name = encrypt(last_name, salt)
 
-        c.execute("""
+        c.execute(""" 
             INSERT INTO users (username, password_hash, role, first_name, last_name, salt) 
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (username, hashed_password, role, encrypted_first_name, encrypted_last_name, salt))
+            VALUES (?, ?, ?, ?, ?, ?) 
+        """, (username, hashed_password, role, encrypted_first_name, encrypted_last_name, salt))  # Include salt in the insert
         
         conn.commit()
         print("Default super admin added successfully.")
@@ -61,6 +62,8 @@ def add_default_super_admin(db_name):
         print(f"SQLite error occurred: {e}")
     finally:
         conn.close()
+
+
 
 def update_db_schema(db_name, update_sql_file):
     try:
