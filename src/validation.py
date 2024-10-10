@@ -121,6 +121,6 @@ def validate_phone(phone):
     """
     Validate phone number as a 10-digit string
     """
-    if len(str(phone)) != 10:
+    if len(str(phone)) != 8:
         return False
     return True

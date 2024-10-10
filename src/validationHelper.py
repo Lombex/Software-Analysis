@@ -62,7 +62,7 @@ class InputValidationUtility:
         elif input_type == 'phone':
             if validate_phone(value):
                 return True, ""
-            return False, "Phone number must be a 10-digit number."
+            return False, "Phone number must be a 8-digit number."
         
         elif input_type == 'name':
             if len(value.strip()) >= 2 and value.strip().isalpha():
