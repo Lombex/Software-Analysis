@@ -38,16 +38,23 @@ def validate_username(username):
     return True
 
 def validate_password(password):
-    if len(password) < 12 or len(password) > 30:
-        return False
-
+    """
+    Validate password based on specified criteria:
+    - At least 10 characters long
+    - Contains at least one lowercase letter
+    - Contains at least one uppercase letter
+    - Contains at least one digit
+    - Contains at least one special character from ~!@#$%&_-+=`|(){}[]:;'<>,.?/
+    """
+    if len(password) < 10:
+        return "Password must be at least 12 characters long."
+    
     has_lower = False
     has_upper = False
     has_digit = False
     has_special = False
-
-    # Special characters allowed in password
-    special_chars = "~!@#$%&_-+=`|\(){}[]:;'<>,.?/"
+    
+    special_characters = set("~!@#$%&_-+=`|(){}[]:;'<>,.?/")
 
     for char in password:
         if char.islower():
@@ -56,11 +63,23 @@ def validate_password(password):
             has_upper = True
         elif char.isdigit():
             has_digit = True
-        elif char in special_chars:
+        elif char in special_characters:
             has_special = True
 
-    # Check if password contains all required character types
-    return has_lower and has_upper and has_digit and has_special
+    if not has_lower:
+        print("Password must contain at least one lowercase letter.")
+        return False
+    if not has_upper:
+        print("Password must contain at least one uppercase letter.")
+        return False
+    if not has_digit:
+        print("Password must contain at least one digit.")
+        return False
+    if not has_special:
+        print("Password must contain at least one special character from ~!@#$%&_-+=`|(){}[]:;'<>,.?/")
+        return False
+    
+    return True
 
 def validate_email(email):
     # Simplified email validation without regex

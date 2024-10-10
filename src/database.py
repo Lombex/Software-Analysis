@@ -51,9 +51,9 @@ def add_default_super_admin(db_name):
         encrypted_last_name = encrypt(last_name, salt)
 
         c.execute("""
-            INSERT INTO users (username, password_hash, role, first_name, last_name) 
-            VALUES (?, ?, ?, ?, ?)
-        """, (username, hashed_password, role, encrypted_first_name, encrypted_last_name))
+            INSERT INTO users (username, password_hash, role, first_name, last_name, salt) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (username, hashed_password, role, encrypted_first_name, encrypted_last_name, salt))
         
         conn.commit()
         print("Default super admin added successfully.")
@@ -75,3 +75,14 @@ def update_db_schema(db_name, update_sql_file):
         print(f"SQLite error occurred while updating schema: {e}")
     finally:
         conn.close()
+
+# Usage example
+if __name__ == "__main__":
+    db_name = 'unique_meal.db'
+    schema_file = 'schema.sql'
+    
+    # Initialize the database
+    initialize_db(db_name, schema_file)
+    
+    # Add default super admin
+    add_default_super_admin(db_name)

@@ -38,12 +38,11 @@ class Main:
         login_attempts = 0
         while login_attempts < 3:
             username = self.get_validated_input("Username: ", 'username')
-
+    
             # Temporary replacement of getpass for testing
             # Replace this with getpass.getpass() in production
-            _password = input("Password: ")  
-            password = getpass.getpass(_password)
-
+            password = self.get_validated_input("Password: ", 'password')  # Ensure this line correctly calls the method
+    
             user, message = self.auth.login(username, password)
             if user:
                 print(f"Welcome, {username}!")
@@ -52,10 +51,11 @@ class Main:
             else:
                 print(message)
                 login_attempts += 1
-
+    
         print("Too many login attempts. Please try again later.")
         self.logger.log_activity("SYSTEM", "Login attempt", "High login frequency", "Yes")
         return None
+
     
 
     def consultant_menu(self, username):
