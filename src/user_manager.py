@@ -1,14 +1,22 @@
 import sqlite3
-from user import User  # Assuming User class is implemented in user.py
-from validation import validate_username, validate_password  # Validation functions from validation.py
-from auth import Auth  # Import Auth class to handle temporary passwords
+from user import User
+from auth import Auth
+from validationHelper import InputValidationUtility
 
 class UserManager:
     def __init__(self, db_name='unique_meal.db'):
         self.db_name = db_name
-        self.auth = Auth(db_name)  # Initialize Auth instance to handle temporary passwords
+        self.auth = Auth(db_name)
+        self.current_user_role = None
+        self.current_username = None
+        self.input_validator = InputValidationUtility(db_name)
 
-    def run_user_management(self):
+    def set_current_user(self, username, role):
+        self.current_username = username
+        self.current_user_role = role
+
+    def run_user_management(self, user):
+        self.set_current_user(user[1], user[2])  # Set username and role
         while True:
             print("\nUser Management Menu:")
             print("1. Add User")
@@ -17,7 +25,7 @@ class UserManager:
             print("4. Delete User")
             print("5. Create Temporary Password")
             print("6. Back to Main Menu")
-            choice = input("Enter your choice (1-6): ")
+            choice = self.input_validator.get_validated_input("Enter your choice (1-6): ", 'choice', self.current_username)
 
             if choice == '1':
                 self.add_user()
@@ -35,58 +43,30 @@ class UserManager:
                 print("Invalid choice")
 
     def add_user(self):
+        if self.current_user_role not in ['system_admin', 'super_admin']:
+            print("You don't have permission to add users.")
+            return
         try:
-            # Input for username
-            while True:
-                username = input("Username (at least 8 characters, no longer than 10, start with letter or underscore, letters, numbers, underscores, apostrophes, periods): ").strip()
-                if validate_username(username):
-                    break
-                else:
-                    print("Invalid input. Username must adhere to the specified format.")
+            username = self.input_validator.get_validated_input("Username: ", 'username', self.current_username)
+            password = self.input_validator.get_validated_input("Password: ", 'password', self.current_username)
+            role = self.input_validator.get_validated_input("Role (consultant/system_admin/super_admin): ", 'role', self.current_username)
+            first_name = self.input_validator.get_validated_input("First Name: ", 'name', self.current_username)
+            last_name = self.input_validator.get_validated_input("Last Name: ", 'name', self.current_username)
 
-            # Input for password
-            while True:
-                password = input("Password (at least 12 characters, no longer than 30, combination of lowercase, uppercase, digit, special characters): ").strip()
-                if validate_password(password):
-                    break
-                else:
-                    print("Invalid input. Password must adhere to the specified format.")
-
-            # Input for role
-            while True:
-                role = input("Role (consultant/system_admin/super_admin): ").strip().lower()
-                if role in ['consultant', 'system_admin', 'super_admin']:
-                    break
-                else:
-                    print("Invalid input. Role must be one of: consultant, system_admin, super_admin.")
-
-            # Input for first_name
-            while True:
-                first_name = input("First Name (at least 2 letters): ").strip()
-                if len(first_name) >= 2 and first_name.isalpha():
-                    break
-                else:
-                    print("Invalid input. First name must be at least 2 letters and only contain alphabetic characters.")
-
-            # Input for last_name
-            while True:
-                last_name = input("Last Name (at least 2 letters): ").strip()
-                if len(last_name) >= 2 and last_name.isalpha():
-                    break
-                else:
-                    print("Invalid input. Last name must be at least 2 letters and only contain alphabetic characters.")
-
-            # Add user to database
             User.add_user(username, password, role, first_name, last_name, db_name=self.db_name)
             print("User added successfully.")
 
+        except ValueError as e:
+            print(f"Error: {e}")
         except sqlite3.Error as e:
-            print(f"SQLite error while inserting user: {e}")
-
+            print(f"Database error: {e}")
         except Exception as e:
             print(f"An error occurred: {e}")
 
     def list_users(self):
+        if self.current_user_role not in ['system_admin', 'super_admin']:
+            print("You don't have permission to list users.")
+            return
         try:
             conn = sqlite3.connect(self.db_name)
             c = conn.cursor()
@@ -100,79 +80,65 @@ class UserManager:
             else:
                 print("No users found.")
         except sqlite3.Error as e:
-            print(f"SQLite error while fetching users: {e}")
+            print(f"Database error: {e}")
 
     def update_user(self):
+        if self.current_user_role not in ['system_admin', 'super_admin']:
+            print("You don't have permission to update users.")
+            return
         try:
-            username = input("Enter username to update: ").strip()
-            user = User.authenticate_user(username, '', db_name=self.db_name)  # Authenticated user to check role
+            username = self.input_validator.get_validated_input("Enter username to update: ", 'username', self.current_username)
+            user = User.get_user(username, db_name=self.db_name)
             if user:
                 print("Current User details:")
-                print(f"Username: {user[0]}, Role: {user[3]}, Name: {user[4]} {user[5]}")
+                print(f"Username: {user[0]}, Role: {user[1]}, Name: {user[2]} {user[3]}")
 
-                # Input for password
-                while True:
-                    password = input("Enter new password (leave blank to keep current): ").strip()
-                    if not password or validate_password(password):
-                        break
-                    else:
-                        print("Invalid input. Password must adhere to the specified format.")
+                password = self.input_validator.get_validated_input("Enter new password (leave blank to keep current): ", 'password', self.current_username)
+                role = self.input_validator.get_validated_input("Enter new role (consultant/system_admin/super_admin, leave blank to keep current): ", 'role', self.current_username)
+                first_name = self.input_validator.get_validated_input("Enter new first name (leave blank to keep current): ", 'name', self.current_username)
+                last_name = self.input_validator.get_validated_input("Enter new last name (leave blank to keep current): ", 'name', self.current_username)
 
-                # Input for role (only for system_admin)
-                if User.is_system_admin(user):
-                    while True:
-                        new_role = input("Enter new role (consultant/system_admin/super_admin): ").strip().lower()
-                        if new_role in ['consultant', 'system_admin', 'super_admin']:
-                            break
-                        else:
-                            print("Invalid input. Role must be one of: consultant, system_admin, super_admin.")
-                else:
-                    new_role = None
-
-                # Update user details, passing None for fields that were left blank
-                User.update_user(username, password, new_role, db_name=self.db_name)
+                User.update_user(username, password or None, role or None, first_name or None, last_name or None, db_name=self.db_name)
                 print("User updated successfully.")
             else:
                 print("User not found.")
-        except sqlite3.Error as e:
-            print(f"SQLite error while updating user: {e}")
+        except ValueError as e:
+            print(f"Error: {e}")
         except Exception as e:
             print(f"An error occurred: {e}")
 
     def delete_user(self):
+        if self.current_user_role != 'super_admin':
+            print("You don't have permission to delete users.")
+            return
         try:
-            username = input("Enter username to delete: ").strip()
+            username = self.input_validator.get_validated_input("Enter username to delete: ", 'username', self.current_username)
             User.delete_user(username, db_name=self.db_name)
             print("User deleted successfully.")
-        except sqlite3.Error as e:
-            print(f"SQLite error while deleting user: {e}")
         except Exception as e:
             print(f"An error occurred: {e}")
 
     def create_temp_password(self):
+        if self.current_user_role not in ['system_admin', 'super_admin']:
+            print("You don't have permission to create temporary passwords.")
+            return
         try:
-            # Input for username
-            username = input("Enter username to create temporary password: ").strip()
+            username = self.input_validator.get_validated_input("Enter username to create temporary password: ", 'username', self.current_username)
             
             # Validate if username exists
-            conn = sqlite3.connect(self.db_name)
-            c = conn.cursor()
-            c.execute("SELECT username FROM users WHERE username=?", (username,))
-            user = c.fetchone()
-            conn.close()
-            
+            user = User.get_user(username, db_name=self.db_name)
             if not user:
                 print(f"User '{username}' not found.")
                 return
             
             # Create temporary password
-            temporary_password = input("Enter temporary password: ").strip()
+            temporary_password = self.input_validator.get_validated_input("Enter temporary password: ", 'password', self.current_username)
             if self.auth.reset_password(username, temporary_password):
                 print(f"Temporary password created successfully for user '{username}'.")
             else:
                 print(f"Failed to create temporary password for user '{username}'.")
 
-        except sqlite3.Error as e:
-            print(f"SQLite error while checking user: {e}")
+        except ValueError as e:
+            print(f"Error: {e}")
         except Exception as e:
             print(f"An error occurred: {e}")

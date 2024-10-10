@@ -1,11 +1,20 @@
 from member import Member
 import sqlite3
+from validationHelper import InputValidationUtility
 
 class MemberManager:
     def __init__(self, db_name='unique_meal.db'):
         self.member = Member(db_name)
+        self.current_user_role = None
+        self.current_username = None
+        self.input_validator = InputValidationUtility(db_name)
 
-    def run_member_management(self):
+    def set_current_user(self, username, role):
+        self.current_username = username
+        self.current_user_role = role
+
+    def run_member_management(self, user):
+        self.set_current_user(user[1], user[2])  # Set username and role
         while True:
             print("1. Add Member")
             print("2. List Members")
@@ -13,7 +22,7 @@ class MemberManager:
             print("4. Update Member")
             print("5. Delete Member")
             print("6. Back to Main Menu")
-            choice = input("Enter your choice (1-6): ")
+            choice = self.input_validator.get_validated_input("Enter your choice (1-6): ", 'choice', self.current_username)
 
             if choice == '1':
                 self.add_member()
@@ -31,89 +40,33 @@ class MemberManager:
                 print("Invalid choice")
 
     def add_member(self):
-        while True:
-            try:
-                # Input for first_name
-                while True:
-                    first_name = input("First Name (at least 2 letters): ").strip()
-                    if len(first_name) >= 2 and first_name.isalpha():
-                        break
-                    else:
-                        print("Invalid input. First name must be at least 2 letters and only contain alphabetic characters.")
+        if self.current_user_role not in ['consultant', 'system_admin', 'super_admin']:
+            print("You don't have permission to add members.")
+            return
+        try:
+            first_name = self.input_validator.get_validated_input("First Name: ", 'name', self.current_username)
+            last_name = self.input_validator.get_validated_input("Last Name: ", 'name', self.current_username)
+            age = self.input_validator.get_validated_input("Age: ", 'age', self.current_username)
+            gender = self.input_validator.get_validated_input("Gender (male/female/other): ", 'gender', self.current_username)
+            weight = self.input_validator.get_validated_input("Weight: ", 'weight', self.current_username)
+            address = self.input_validator.get_validated_input("Address: ", 'address', self.current_username)
+            email = self.input_validator.get_validated_input("Email: ", 'email', self.current_username)
+            phone = self.input_validator.get_validated_input("Phone: ", 'phone', self.current_username)
 
-                # Input for last_name
-                while True:
-                    last_name = input("Last Name (at least 2 letters): ").strip()
-                    if len(last_name) >= 2 and last_name.isalpha():
-                        break
-                    else:
-                        print("Invalid input. Last name must be at least 2 letters and only contain alphabetic characters.")
+            membership_id = self.member.add_member(first_name, last_name, int(age), gender, float(weight), address, email, phone)
+            print(f"Member added with Membership ID: {membership_id}")
 
-                # Input for age
-                while True:
-                    try:
-                        age = int(input("Age (must be a positive integer): "))
-                        if age <= 0:
-                            print("Age must be a positive integer.")
-                        else:
-                            break
-                    except ValueError:
-                        print("Invalid input. Age must be a positive integer.")
-
-                # Input for gender
-                gender = input("Gender: ").strip()
-
-                # Input for weight
-                while True:
-                    try:
-                        weight = float(input("Weight (must be a positive number): "))
-                        if weight < 0:
-                            print("Weight must be a positive number.")
-                        else:
-                            break
-                    except ValueError:
-                        print("Invalid input. Weight must be a positive number.")
-
-                # Input for address
-                address = input("Address: ").strip()
-
-                # Input for email
-                while True:
-                    email = input("Email (must contain '@'): ").strip()
-                    if '@' in email:
-                        break
-                    else:
-                        print("Invalid input. Email must contain '@'.")
-
-                # Input for phone
-                while True:
-                    try:
-                        phone = int(input("Phone (must be a 10-digit number): "))
-                        if len(str(phone)) != 10:
-                            print("Invalid input. Phone must be exactly 10 digits long.")
-                        else:
-                            break
-                    except ValueError:
-                        print("Invalid input. Phone must be a number.")
-
-                # Generate membership ID
-                membership_id = self.member.add_member(first_name, last_name, age, gender, weight, address, email, phone)
-                print(f"Member added with Membership ID: {membership_id}")
-                break  # Break out of the loop if member is successfully added
-
-            except ValueError as e:
-                print(f"Error: {e}")
-                print("Please try again.")
-
-            except sqlite3.Error as e:
-                print(f"Database error: {e}")
-                break  # Break out of the loop on database error
-
-            except Exception as e:
-                print(f"An error occurred: {e}")
-                break  # Break out of the loop on any other unexpected error
+        except ValueError as e:
+            print(f"Error: {e}")
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
     def list_members(self):
+        if self.current_user_role not in ['consultant', 'system_admin', 'super_admin']:
+            print("You don't have permission to list members.")
+            return
         members = self.member.list_members()
         if members:
             for member in members:
@@ -122,7 +75,10 @@ class MemberManager:
             print("No members found.")
 
     def search_members(self):
-        search_key = input("Enter search key: ").strip().lower()  # Convert search key to lowercase for case-insensitive search
+        if self.current_user_role not in ['consultant', 'system_admin', 'super_admin']:
+            print("You don't have permission to search members.")
+            return
+        search_key = self.input_validator.get_validated_input("Enter search key: ", 'search', self.current_username)
         members = self.member.search_members(search_key)
         if members:
             for member in members:
@@ -131,23 +87,25 @@ class MemberManager:
             print("No members found.")
 
     def update_member(self):
+        if self.current_user_role not in ['system_admin', 'super_admin']:
+            print("You don't have permission to update members.")
+            return
         try:
-            member_id = input("Enter member ID to update: ").strip()
+            member_id = self.input_validator.get_validated_input("Enter member ID to update: ", 'member_id', self.current_username)
             member = self.member.get_member(member_id)
             if member:
                 print("Current Member details:")
                 print(f"ID: {member[0]}, First Name: {member[1]}, Last Name: {member[2]}, Age: {member[3]}, Gender: {member[4]}, Weight: {member[5]}, Address: {member[6]}, Email: {member[7]}, Phone: {member[8]}")
 
-                first_name = input("Enter new first name (leave blank to keep current): ").strip()
-                last_name = input("Enter new last name (leave blank to keep current): ").strip()
-                age = input("Enter new age (leave blank to keep current): ").strip()
-                gender = input("Enter new gender (leave blank to keep current): ").strip()
-                weight = input("Enter new weight (leave blank to keep current): ").strip()
-                address = input("Enter new address (leave blank to keep current): ").strip()
-                email = input("Enter new email (leave blank to keep current): ").strip()
-                phone = input("Enter new phone (leave blank to keep current): ").strip()
+                first_name = self.input_validator.get_validated_input("Enter new first name (leave blank to keep current): ", 'name', self.current_username)
+                last_name = self.input_validator.get_validated_input("Enter new last name (leave blank to keep current): ", 'name', self.current_username)
+                age = self.input_validator.get_validated_input("Enter new age (leave blank to keep current): ", 'age', self.current_username)
+                gender = self.input_validator.get_validated_input("Enter new gender (male/female/other, leave blank to keep current): ", 'gender', self.current_username)
+                weight = self.input_validator.get_validated_input("Enter new weight (leave blank to keep current): ", 'weight', self.current_username)
+                address = self.input_validator.get_validated_input("Enter new address (leave blank to keep current): ", 'address', self.current_username)
+                email = self.input_validator.get_validated_input("Enter new email (leave blank to keep current): ", 'email', self.current_username)
+                phone = self.input_validator.get_validated_input("Enter new phone (leave blank to keep current): ", 'phone', self.current_username)
 
-                # Update member details, passing None for fields that were left blank
                 self.member.update_member(
                     member_id,
                     first_name or None,
@@ -168,8 +126,11 @@ class MemberManager:
             print(f"An error occurred: {e}")
 
     def delete_member(self):
+        if self.current_user_role != 'super_admin':
+            print("You don't have permission to delete members.")
+            return
         try:
-            member_id = input("Enter member ID to delete: ").strip()
+            member_id = self.input_validator.get_validated_input("Enter member ID to delete: ", 'member_id', self.current_username)
             self.member.delete_member(member_id)
             print("Member deleted successfully.")
         except Exception as e:

@@ -47,9 +47,9 @@ def main():
                     print("Suspicious activity detected. Action logged.")
                     continue
 
-                result = auth.login(username, password)
-                if result:
-                    user_id, username, role = result  # Unpack the tuple returned by login
+                user = auth.login(username, password)
+                if user:
+                    user_id, username, role = user  # Unpack the tuple returned by login
 
                     print(f"Attempting login with username: {username} and password: {'*'*len(password)}")
                     print(f"Welcome {username}")  # Print welcome message with username
@@ -74,7 +74,7 @@ def main():
                                     print("Failed to change password. Please try again.")
 
                             elif choice == '2':
-                                member_manager.run_member_management()
+                                member_manager.run_member_management(user)
                                 logger.log_activity(username, "Accessed Member Management")
 
                             elif choice == '3':
@@ -108,11 +108,11 @@ def main():
                                     print("Failed to change password. Please try again.")
 
                             elif choice == '2':
-                                member_manager.run_member_management()
+                                member_manager.run_member_management(user)
                                 logger.log_activity(username, "Accessed Member Management")
 
                             elif choice == '3':
-                                user_manager.run_user_management()
+                                user_manager.run_user_management(user)
                                 logger.log_activity(username, "Accessed User Management")
 
                             elif choice == '4':
