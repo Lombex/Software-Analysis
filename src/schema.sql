@@ -35,3 +35,4 @@ CREATE TABLE IF NOT EXISTS logs (
     suspicious TEXT CHECK (suspicious IN ('Yes', 'No')),
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
 );
+
