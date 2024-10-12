@@ -51,7 +51,7 @@ class MemberManager:
             weight = self.input_validator.get_validated_input("Weight: ", 'weight', self.current_username)
             address = self.input_validator.get_validated_input("Address: ", 'address', self.current_username)
             email = self.input_validator.get_validated_input("Email: ", 'email', self.current_username)
-            phone = self.input_validator.get_validated_input("Phone: ", 'phone', self.current_username)
+            phone = self.input_validator.get_validated_input("Phone +31-6-", 'phone', self.current_username)
 
             membership_id = self.member.add_member(first_name, last_name, int(age), gender, float(weight), address, email, phone)
             print(f"Member added with Membership ID: {membership_id}")
