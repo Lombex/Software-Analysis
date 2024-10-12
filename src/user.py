@@ -100,43 +100,18 @@ class User:
             return None
         finally:
             conn.close()
-
     @staticmethod
-    def is_consultant(user):
-        # Check if user is a consultant
-        return user and user[3] == 'consultant'
+    def list_users(db_name='unique_meal.db'):
+        conn = sqlite3.connect(db_name)
+        c = conn.cursor()
 
-    @staticmethod
-    def is_system_admin(user):
-        # Check if user is a system administrator
-        return user and user[3] == 'system_admin'
-
-    @staticmethod
-    def is_super_admin(user):
-        # Check if user is a super administrator
-        return user and user[3] == 'super_admin'
-
-    @staticmethod
-    def can_add_member(user):
-        # Check if user can add a new member
-        return User.is_consultant(user) or User.is_system_admin(user) or User.is_super_admin(user)
-
-    @staticmethod
-    def can_update_member(user):
-        # Check if user can update member information
-        return User.is_consultant(user) or User.is_system_admin(user) or User.is_super_admin(user)
-
-    @staticmethod
-    def can_delete_member(user):
-        # Check if user can delete a member
-        return User.is_system_admin(user) or User.is_super_admin(user)
-
-    @staticmethod
-    def can_view_logs(user):
-        # Check if user can view system logs
-        return User.is_system_admin(user) or User.is_super_admin(user)
-
-    @staticmethod
-    def can_make_backup(user):
-        # Check if user can make a backup of the system
-        return User.is_system_admin(user) or User.is_super_admin(user)
+        try:
+            # Execute SELECT query to get all users
+            c.execute("SELECT username, role, first_name, last_name FROM users")
+            users = c.fetchall()
+            return users  # Return the fetched users
+        except sqlite3.Error as e:
+            print(f"SQLite error while fetching users: {e}")
+            return []  # Return an empty list in case of error
+        finally:
+            conn.close()
