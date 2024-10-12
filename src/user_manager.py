@@ -93,7 +93,7 @@ class UserManager:
                 if self.current_user_role  == 'system_admin' and user[1] in ['super_admin','system_admin']:
                     print("You don't have permission to update this user.")
                     return
-                elif self.current_user_role == 'super_admin'and user[1] is 'super_admin':
+                elif self.current_user_role == 'super_admin'and user[1] == 'super_admin':
                     print("You don't have permission to update this user.")
                     return
                 else:
@@ -125,7 +125,7 @@ class UserManager:
                 if self.current_user_role  == 'system_admin' and user[1] in ['super_admin','system_admin']:
                     print("You don't have permission to delete this user.")
                     return
-                elif self.current_user_role == 'super_admin'and user[1] is 'super_admin':
+                elif self.current_user_role == 'super_admin'and user[1] == 'super_admin':
                     print("You don't have permission to delete this user.")
                     return
         
@@ -145,7 +145,7 @@ class UserManager:
                 if self.current_user_role  == 'system_admin' and user[1] in ['super_admin','system_admin']:
                     print("You don't have permission for this action.")
                     return
-                elif self.current_user_role == 'super_admin'and user[1] is 'super_admin':
+                elif self.current_user_role == 'super_admin'and user[1] == 'super_admin':
                     print("You don't have permission for this action.")
                     return
             

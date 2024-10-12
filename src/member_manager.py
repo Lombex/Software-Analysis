@@ -140,7 +140,7 @@ class MemberManager:
             print(f"An error occurred: {e}")
 
     def update_member(self):
-        if self.current_user_role not in ['system_admin', 'super_admin']:
+        if self.current_user_role not in ['consultant', 'system_admin', 'super_admin']:
             print("You don't have permission to update members.")
             return
         
@@ -195,7 +195,7 @@ class MemberManager:
 
                 # Collect email and phone number with the option to skip (keep current values)
                 email = self.input_validator.validate_any_inputs("Enter new email (leave blank to keep current): ", 'email', self.current_username)
-                phone = self.input_validator.validate_any_inputs("Enter new phone (leave blank to keep current): ", 'phone', self.current_username)
+                phone = self.input_validator.validate_any_inputs("Enter new phone (leave blank to keep current): Phone +31-6-", 'phone', self.current_username)
 
                 # Update member details, keeping current values if fields are blank
                 self.member.update_member(
@@ -218,7 +218,7 @@ class MemberManager:
             print(f"An error occurred: {e}")
 
     def delete_member(self):
-        if self.current_user_role != 'super_admin':
+        if self.current_user_role not in ['system_admin', 'super_admin']:
             print("You don't have permission to delete members.")
             return
         try:
