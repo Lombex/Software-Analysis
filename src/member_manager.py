@@ -55,9 +55,9 @@ class MemberManager:
             gender = self.input_validator.validate_any_inputs("Gender (male/female/other): ", 'gender', self.current_username)
             weight = self.input_validator.validate_any_inputs("Weight: ", 'weight', self.current_username)
             # Collect address details step by step
-            street_name = self.input_validator.get_validated_input("Street Name: ", 'address', self.current_username)
-            house_number = self.input_validator.get_validated_input("House Number: ", 'number', self.current_username)
-            zip_code = self.input_validator.get_validated_input("Zip Code (DDDDXX): ", 'zipcode', self.current_username)
+            street_name = self.input_validator.validate_any_inputs("Street Name: ", 'address', self.current_username)
+            house_number = self.input_validator.validate_any_inputs("House Number: ", 'number', self.current_username)
+            zip_code = self.input_validator.validate_any_inputs("Zip Code (DDDDXX): ", 'zipcode', self.current_username)
             
             # Display predefined list of cities and ask user to choose
             print("Choose a city from the following list:")
@@ -67,7 +67,7 @@ class MemberManager:
             # City selection validation loop
             while True:
                 try:
-                    city_choice = int(self.input_validator.get_validated_input("Enter the number corresponding to your city: ", 'number', self.current_username))
+                    city_choice = int(self.input_validator.validate_any_inputs("Enter the number corresponding to your city: ", 'number', self.current_username))
                     
                     if 1 <= city_choice <= len(cities):
                         city = cities[city_choice - 1]  # Adjust for zero-based index
@@ -80,7 +80,7 @@ class MemberManager:
             # Combine address parts into a single string
             address = f"{street_name} {house_number}, {zip_code}, {city}"
             email = self.input_validator.validate_any_inputs("Email: ", 'email', self.current_username)
-            phone = self.input_validator.get_validated_input("Phone +31-6-", 'phone', self.current_username)
+            phone = self.input_validator.validate_any_inputs("Phone +31-6-", 'phone', self.current_username)
 
             membership_id = self.member.add_member(first_name, last_name, int(age), gender, float(weight), address, email, phone)
             print(f"Member added with Membership ID: {membership_id}")
@@ -164,9 +164,9 @@ class MemberManager:
                 gender = self.input_validator.validate_any_inputs("Enter new gender (male/female/other, leave blank to keep current): ", 'gender', self.current_username)
                 weight = self.input_validator.validate_any_inputs("Enter new weight (leave blank to keep current): ", 'weight', self.current_username)
                 # Prompt for address updates (step by step)
-                street_name = self.input_validator.get_validated_input("Enter new Street Name (leave blank to keep current): ", 'address', self.current_username)
-                house_number = self.input_validator.get_validated_input("Enter new House Number (leave blank to keep current): ", 'number', self.current_username)
-                zip_code = self.input_validator.get_validated_input("Enter new Zip Code (DDDDXX, leave blank to keep current): ", 'zipcode', self.current_username)
+                street_name = self.input_validator.validate_any_inputs("Enter new Street Name (leave blank to keep current): ", 'address', self.current_username)
+                house_number = self.input_validator.validate_any_inputs("Enter new House Number (leave blank to keep current): ", 'number', self.current_username)
+                zip_code = self.input_validator.validate_any_inputs("Enter new Zip Code (DDDDXX, leave blank to keep current): ", 'zipcode', self.current_username)
 
                 # City selection with validation
                 print("Choose a city from the following list (leave blank to keep current):")
@@ -174,7 +174,7 @@ class MemberManager:
                     print(f"{index}. {city}")
 
                 while True:
-                    city_choice = self.input_validator.get_validated_input("Enter the number corresponding to your city (leave blank to keep current): ", 'number', self.current_username)
+                    city_choice = self.input_validator.validate_any_inputs("Enter the number corresponding to your city (leave blank to keep current): ", 'number', self.current_username)
                     
                     if not city_choice:
                         city = member[6].split(",")[-1].strip()  # Use the current city from the member's address
