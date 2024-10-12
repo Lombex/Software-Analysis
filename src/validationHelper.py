@@ -14,13 +14,54 @@ class InputValidationUtility:
         input_attempts = c.fetchone()[0]
         conn.close()
         return input_attempts > 5
+    
+    def detect_sql_injection(self, input_string):
+        # List of SQL injection keywords
+        sql_injection_keywords = [
+            "#", ";",  # comment and semicolon
+            "%28", "(", "%29", ")",  # Parentheses
+            "%20", " ",  # Space
+            "union select",  # Union select
+            "select *",  # Select all
+            "insert into",  # Insert statement
+            "drop table",  # Drop table
+            "update set",  # Update statement
+            "delete from",  # Delete statement
+            "or 1=1",  # OR condition
+            "or '1'='1'",  # OR condition with quotes
+            "--",  # Comment
+            "xp_cmdshell",  # Command execution
+            "exec(",  # Execution
+            "exec ",  # Execution
+            "union all select",  # Union all select
+            "information_schema.tables",  # Information schema
+            "load_file(",  # Load file
+            "into outfile",  # Output file
+            "benchmark(",  # Benchmark function
+            "sleep(",  # Sleep function
+            "' or 'x'='x",  # OR condition with quotes
+            "' OR '1",  # OR condition with quotes
+            '" OR "1',  # OR condition with quotes
+            ") OR (1=1",  # OR condition with parentheses
+        ]
 
-    def log_input_attempt(self, username, input_type):
+        # Normalize the input string to lower case for case-insensitive comparison
+        input_string = input_string.lower()
+
+        # Check if any of the keywords are in the input string
+        for keyword in sql_injection_keywords:
+            if keyword == input_string:
+                return True  # SQL injection detected
+
+        return False  # No SQL injection detected
+
+    def log_input_attempt(self, username, input_type, suspicious=False, value = None):
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
         now = datetime.datetime.now()
+        activity = f"Suspicious Activity Detected. User entered: {value}" if suspicious else f"Input Attempt: {input_type}"
         c.execute("INSERT INTO logs (username, activity, date, time) VALUES (?, ?, ?, ?)",
-                  (username, f"Input Attempt: {input_type}", now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S")))
+                  (username, activity, now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S")))
         conn.commit()
         conn.close()
 
@@ -99,10 +140,12 @@ class InputValidationUtility:
         :return: The validated input value
         """
         while True:
-            if self.detect_suspicious_activity(username):
+            value = input(prompt).strip()
+            if self.detect_sql_injection(value):
+                self.log_input_attempt(username, input_type, True, value)
                 raise ValueError("Suspicious activity detected. Please try again later.")
 
-            value = input(prompt).strip()
+            
             self.log_input_attempt(username, input_type)
 
             is_valid, error_message = self.validate_input(input_type, value)
