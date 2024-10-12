@@ -26,34 +26,37 @@ def main():
     user_manager = UserManager(db_name)
 
     print("Welcome to Unique Meal Member Management System")
+    try:
+        while True:
+            print("\nMain Menu:")
+            print("1. Login")
+            print("2. Exit")
 
-    while True:
-        print("\nMain Menu:")
-        print("1. Login")
-        print("2. Exit")
+            choice = input("Enter choice: ")
 
-        choice = input("Enter choice: ")
+            if choice == '1':
+                user = Login.login(auth, logger)  # Pass auth and logger to login
+                if user:
+                    user_id, username, role = user  # Unpack the tuple returned by login
+                    print(f"Welcome {username}")  # Print welcome message with username
+                    logger.log_activity(username, "Logged in")
 
-        if choice == '1':
-            user = Login.login(auth, logger)  # Pass auth and logger to login
-            if user:
-                user_id, username, role = user  # Unpack the tuple returned by login
-                print(f"Welcome {username}")  # Print welcome message with username
-                logger.log_activity(username, "Logged in")
+                    # Call menu based on user role (add this part based on your requirements)
+                    if role == 'consultant':
+                        Login.consultant_menu(user, auth, logger)  # Use user info to access member management
+                    elif role in ['system_admin', 'super_admin']:
+                        # Add appropriate method calls for admin roles
+                        Login.admin_menu(user, auth, logger)  # For example, run user management
 
-                # Call menu based on user role (add this part based on your requirements)
-                if role == 'consultant':
-                    Login.consultant_menu(user, auth, logger)  # Use user info to access member management
-                elif role in ['system_admin', 'super_admin']:
-                    # Add appropriate method calls for admin roles
-                    Login.admin_menu(user, auth, logger)  # For example, run user management
+            elif choice == '2':
+                print("Exiting the application.")
+                break
 
-        elif choice == '2':
-            print("Exiting the application.")
-            break
-
-        else:
-            print("Invalid choice, please try again.")
+            else:
+                print("Invalid choice, please try again.")
+    except Exception as e:
+        print(f"An error occurred, returning to Main Menu")
+        main()
 
 if __name__ == "__main__":
     main()

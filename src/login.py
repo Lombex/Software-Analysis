@@ -86,6 +86,7 @@ class Login:
 
     @staticmethod
     def admin_menu(user, auth: Auth, logger: Logger):
+        validation_utility = InputValidationUtility()
         username, role = user[1], user[2]  # Extract username and role from user object
         while True:
             print("\nAdministrator Menu:")
@@ -101,8 +102,9 @@ class Login:
             choice = input("Enter choice: ")
 
             if choice == '1':
-                new_password = input("Enter new password: ")
-                if auth.change_password(username, new_password):
+                current_password = input("Enter old password: ")
+                new_password = validation_utility.validate_any_inputs('Enter new password: ', 'password', username )
+                if auth.change_password(username, current_password, new_password):
                     print("Password changed successfully.")
                     logger.log_activity(username, "Changed their password")
                 else:
