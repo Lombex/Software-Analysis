@@ -54,7 +54,7 @@ def main():
             else:
                 print("Invalid choice, please try again.")
     except Exception as e:
-        print(f"An error occurred, returning to Main Menu")
+        print(f"An error occurred, returning to Main Menu", print(e))
         main()
 
 if __name__ == "__main__":
