@@ -89,7 +89,20 @@ class User:
             print(f"SQLite error while deleting user: {e}")
         finally:
             conn.close()
-
+    @staticmethod
+    def get_user(username, db_name='unique_meal.db'):
+        conn = sqlite3.connect(db_name)
+        c = conn.cursor()
+        try:
+            c.execute("SELECT username, role, first_name, last_name FROM users WHERE username = ?", (username,))
+            user = c.fetchone()  # Fetch one user
+            return user  # Return user details if found, otherwise return None
+        except sqlite3.Error as e:
+            print(f"SQLite error while retrieving user: {e}")
+            return None
+        finally:
+            conn.close()
+            
     @staticmethod
     def is_consultant(user):
         # Check if user is a consultant
