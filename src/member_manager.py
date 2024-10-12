@@ -43,13 +43,46 @@ class MemberManager:
         if self.current_user_role not in ['consultant', 'system_admin', 'super_admin']:
             print("You don't have permission to add members.")
             return
+        # Predefined list of cities
+        cities = [
+            "Amsterdam", "Rotterdam", "The Hague", "Utrecht", 
+            "Eindhoven", "Tilburg", "Groningen", "Breda", 
+            "Nijmegen", "Enschede"]
+        
         try:
             first_name = self.input_validator.get_validated_input("First Name: ", 'name', self.current_username)
             last_name = self.input_validator.get_validated_input("Last Name: ", 'name', self.current_username)
             age = self.input_validator.get_validated_input("Age: ", 'age', self.current_username)
             gender = self.input_validator.get_validated_input("Gender (male/female/other): ", 'gender', self.current_username)
             weight = self.input_validator.get_validated_input("Weight: ", 'weight', self.current_username)
-            address = self.input_validator.get_validated_input("Address: ", 'address', self.current_username)
+            # Collect address details step by step
+            street_name = self.input_validator.get_validated_input("Street Name: ", 'address', self.current_username)
+            house_number = self.input_validator.get_validated_input("House Number: ", 'number', self.current_username)
+            zip_code = self.input_validator.get_validated_input("Zip Code (DDDDXX): ", 'zipcode', self.current_username)
+            
+            # Display predefined list of cities and ask user to choose
+             # Display predefined list of cities and ask user to choose
+            print("Choose a city from the following list:")
+            for index, city in enumerate(cities, 1):
+                print(f"{index}. {city}")
+            
+            # City selection validation loop
+            while True:
+                try:
+                    city_choice = int(self.input_validator.get_validated_input("Enter the number corresponding to your city: ", 'number', self.current_username))
+                    
+                    if 1 <= city_choice <= len(cities):
+                        city = cities[city_choice - 1]  # Adjust for zero-based index
+                        break
+                    else:
+                        print(f"Please enter a number between 1 and {len(cities)}.")
+                except ValueError:
+                    print("Invalid input. Please enter a valid number.")
+            
+            # Combine address parts into a single string
+            address = f"{street_name} {house_number}, {zip_code}, {city}"
+        
+        
             email = self.input_validator.get_validated_input("Email: ", 'email', self.current_username)
             phone = self.input_validator.get_validated_input("Phone +31-6-", 'phone', self.current_username)
 
