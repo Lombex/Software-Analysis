@@ -63,9 +63,9 @@ class InputValidationUtility:
             return False, "Name must be at least 2 letters and contain only alphabetic characters."
         
         elif input_type == 'role':
-            if value.lower() in ['consultant', 'system_admin', 'super_admin']:
+            if value.lower() in ['consultant', 'system_admin']:
                 return True, ""
-            return False, "Role must be one of: consultant, system_admin, super_admin."
+            return False, "Role must be one of: consultant, system_admin"
         
         elif input_type == 'gender':
             if value.strip().lower() in ['male', 'female', 'other']:
