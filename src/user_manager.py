@@ -94,7 +94,7 @@ class UserManager:
                 print(f"Username: {user[0]}, Role: {user[1]}, Name: {user[2]} {user[3]}")
 
                 password = self.input_validator.get_validated_input("Enter new password (leave blank to keep current): ", 'password', self.current_username)
-                role = self.input_validator.get_validated_input("Enter new role (consultant/system_admin/super_admin, leave blank to keep current): ", 'role', self.current_username)
+                role = self.input_validator.get_validated_input("Enter new role (consultant/system_admin, leave blank to keep current): ", 'role', self.current_username)
                 first_name = self.input_validator.get_validated_input("Enter new first name (leave blank to keep current): ", 'name', self.current_username)
                 last_name = self.input_validator.get_validated_input("Enter new last name (leave blank to keep current): ", 'name', self.current_username)
 
