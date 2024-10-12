@@ -5,11 +5,10 @@ from validationHelper import InputValidationUtility
 
 class UserManager:
     def __init__(self, db_name='unique_meal.db'):
-        self.db_name = db_name
-        self.auth = Auth(db_name)
+        self.auth = Auth(db_name)  # Initialize Auth directly with the database name
         self.current_user_role = None
         self.current_username = None
-        self.input_validator = InputValidationUtility(db_name)
+        self.input_validator = InputValidationUtility()  # Initialize InputValidationUtility directly
 
     def set_current_user(self, username, role):
         self.current_username = username
@@ -25,7 +24,7 @@ class UserManager:
             print("4. Delete User")
             print("5. Create Temporary Password")
             print("6. Back to Main Menu")
-            choice = self.input_validator.get_validated_input("Enter your choice (1-6): ", 'choice', self.current_username)
+            choice = self.input_validator.validate_any_inputs("Enter your choice (1-6): ", 'choice', self.current_username)
 
             if choice == '1':
                 self.add_user()
@@ -47,13 +46,13 @@ class UserManager:
             print("You don't have permission to add users.")
             return
         try:
-            username = self.input_validator.get_validated_input("Username: ", 'username', self.current_username)
-            password = self.input_validator.get_validated_input("Password: ", 'password', self.current_username)
-            role = self.input_validator.get_validated_input("Role (consultant/system_admin/super_admin): ", 'role', self.current_username)
-            first_name = self.input_validator.get_validated_input("First Name: ", 'name', self.current_username)
-            last_name = self.input_validator.get_validated_input("Last Name: ", 'name', self.current_username)
+            username = self.input_validator.validate_any_inputs("Username: ", 'username', self.current_username)
+            password = self.input_validator.validate_any_inputs("Password: ", 'password', self.current_username)
+            role = self.input_validator.validate_any_inputs("Role (consultant/system_admin/super_admin): ", 'role', self.current_username)
+            first_name = self.input_validator.validate_any_inputs("First Name: ", 'name', self.current_username)
+            last_name = self.input_validator.validate_any_inputs("Last Name: ", 'name', self.current_username)
 
-            User.add_user(username, password, role, first_name, last_name, db_name=self.db_name)
+            User.add_user(username, password, role, first_name, last_name)  # Pass the necessary arguments directly
             print("User added successfully.")
 
         except ValueError as e:
@@ -68,11 +67,7 @@ class UserManager:
             print("You don't have permission to list users.")
             return
         try:
-            conn = sqlite3.connect(self.db_name)
-            c = conn.cursor()
-            c.execute("SELECT username, role, first_name, last_name FROM users")
-            users = c.fetchall()
-            conn.close()
+            users = User.list_users()  # Call list_users method from User directly
 
             if users:
                 for user in users:
@@ -87,18 +82,18 @@ class UserManager:
             print("You don't have permission to update users.")
             return
         try:
-            username = self.input_validator.get_validated_input("Enter username to update: ", 'username', self.current_username)
-            user = User.get_user(username, db_name=self.db_name)
+            username = self.input_validator.validate_any_inputs("Enter username to update: ", 'username', self.current_username)
+            user = User.get_user(username)  # Fetch user details from User directly
             if user:
                 print("Current User details:")
                 print(f"Username: {user[0]}, Role: {user[1]}, Name: {user[2]} {user[3]}")
 
-                password = self.input_validator.get_validated_input("Enter new password (leave blank to keep current): ", 'password', self.current_username)
-                role = self.input_validator.get_validated_input("Enter new role (consultant/system_admin/super_admin, leave blank to keep current): ", 'role', self.current_username)
-                first_name = self.input_validator.get_validated_input("Enter new first name (leave blank to keep current): ", 'name', self.current_username)
-                last_name = self.input_validator.get_validated_input("Enter new last name (leave blank to keep current): ", 'name', self.current_username)
+                password = self.input_validator.validate_any_inputs("Enter new password (leave blank to keep current): ", 'password', self.current_username)
+                role = self.input_validator.validate_any_inputs("Enter new role (consultant/system_admin/super_admin, leave blank to keep current): ", 'role', self.current_username)
+                first_name = self.input_validator.validate_any_inputs("Enter new first name (leave blank to keep current): ", 'name', self.current_username)
+                last_name = self.input_validator.validate_any_inputs("Enter new last name (leave blank to keep current): ", 'name', self.current_username)
 
-                User.update_user(username, password or None, role or None, first_name or None, last_name or None, db_name=self.db_name)
+                User.update_user(username, password or None, role or None, first_name or None, last_name or None)  # Call update_user from User directly
                 print("User updated successfully.")
             else:
                 print("User not found.")
@@ -112,8 +107,8 @@ class UserManager:
             print("You don't have permission to delete users.")
             return
         try:
-            username = self.input_validator.get_validated_input("Enter username to delete: ", 'username', self.current_username)
-            User.delete_user(username, db_name=self.db_name)
+            username = self.input_validator.validate_any_inputs("Enter username to delete: ", 'username', self.current_username)
+            User.delete_user(username)  # Call delete_user from User directly
             print("User deleted successfully.")
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -123,16 +118,16 @@ class UserManager:
             print("You don't have permission to create temporary passwords.")
             return
         try:
-            username = self.input_validator.get_validated_input("Enter username to create temporary password: ", 'username', self.current_username)
+            username = self.input_validator.validate_any_inputs("Enter username to create temporary password: ", 'username', self.current_username)
             
             # Validate if username exists
-            user = User.get_user(username, db_name=self.db_name)
+            user = User.get_user(username)  # Call get_user from User directly
             if not user:
                 print(f"User '{username}' not found.")
                 return
             
             # Create temporary password
-            temporary_password = self.input_validator.get_validated_input("Enter temporary password: ", 'password', self.current_username)
+            temporary_password = self.input_validator.validate_any_inputs("Enter temporary password: ", 'password', self.current_username)
             if self.auth.reset_password(username, temporary_password):
                 print(f"Temporary password created successfully for user '{username}'.")
             else:

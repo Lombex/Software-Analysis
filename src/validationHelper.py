@@ -1,6 +1,5 @@
 import sqlite3
 import datetime
-import re
 from validation import validate_username, validate_password, validate_email, validate_age, validate_weight, validate_phone
 
 class InputValidationUtility:
@@ -35,34 +34,28 @@ class InputValidationUtility:
                  and a string containing an error message if invalid (or empty string if valid)
         """
         if input_type == 'username':
-            if validate_username(value):
-                return True, ""
-            return False, "Username must be 8-10 characters, start with a letter or underscore, and contain only letters, numbers, underscores, periods, or apostrophes."
+            is_valid, message = validate_username(value)
+            return is_valid, message
         
         elif input_type == 'password':
-            if validate_password(value):
-                return True, ""
-            return False, "Password must be 12-30 characters long, contain at least one lowercase letter, one uppercase letter, one digit, and one special character."
+            is_valid, message = validate_password(value)
+            return is_valid, message
         
         elif input_type == 'email':
-            if validate_email(value):
-                return True, ""
-            return False, "Invalid email format."
+            is_valid, message = validate_email(value)
+            return is_valid, message
         
         elif input_type == 'age':
-            if validate_age(value):
-                return True, ""
-            return False, "Age must be a positive integer."
+            is_valid, message = validate_age(value)
+            return is_valid, message
         
         elif input_type == 'weight':
-            if validate_weight(value):
-                return True, ""
-            return False, "Weight must be a positive number."
+            is_valid, message = validate_weight(value)
+            return is_valid, message
         
         elif input_type == 'phone':
-            if validate_phone(value):
-                return True, ""
-            return False, "Phone number must be a 8-digit number."
+            is_valid, message = validate_phone(value)
+            return is_valid, message
         
         elif input_type == 'name':
             if len(value.strip()) >= 2 and value.strip().isalpha():
@@ -95,7 +88,7 @@ class InputValidationUtility:
                 return True, ""
             return False, f"{input_type.capitalize()} cannot be empty."
 
-    def get_validated_input(self, prompt, input_type, username):
+    def validate_any_inputs(self, prompt, input_type, username):
         """
         Prompt the user for input, validate it based on the specified input type,
         and check for suspicious activity.
