@@ -61,7 +61,6 @@ class MemberManager:
             zip_code = self.input_validator.get_validated_input("Zip Code (DDDDXX): ", 'zipcode', self.current_username)
             
             # Display predefined list of cities and ask user to choose
-             # Display predefined list of cities and ask user to choose
             print("Choose a city from the following list:")
             for index, city in enumerate(cities, 1):
                 print(f"{index}. {city}")
@@ -155,36 +154,82 @@ class MemberManager:
         if self.current_user_role not in ['system_admin', 'super_admin']:
             print("You don't have permission to update members.")
             return
+        
+        # Predefined list of cities
+        cities = [
+            "Amsterdam", "Rotterdam", "The Hague", "Utrecht", 
+            "Eindhoven", "Tilburg", "Groningen", "Breda", 
+            "Nijmegen", "Enschede"
+        ]
+
         try:
+            # Get the member ID and retrieve the current details
             member_id = self.input_validator.get_validated_input("Enter member ID to update: ", 'member_id', self.current_username)
             member = self.member.get_member(member_id)
+            
             if member:
+                # Display the current member details
                 print("Current Member details:")
                 print(f"ID: {member[0]}, First Name: {member[1]}, Last Name: {member[2]}, Age: {member[3]}, Gender: {member[4]}, Weight: {member[5]}, Address: {member[6]}, Email: {member[7]}, Phone: {member[8]}")
+                
+                # Prompt for updates; allow skipping fields by pressing Enter
+                first_name = self.input_validator.get_validated_input("Enter new first name (leave blank to keep current): ", 'name', self.current_username) or member[1]
+                last_name = self.input_validator.get_validated_input("Enter new last name (leave blank to keep current): ", 'name', self.current_username) or member[2]
+                age = self.input_validator.get_validated_input("Enter new age (leave blank to keep current): ", 'age', self.current_username) or member[3]
+                gender = self.input_validator.get_validated_input("Enter new gender (male/female/other, leave blank to keep current): ", 'gender', self.current_username) or member[4]
+                weight = self.input_validator.get_validated_input("Enter new weight (leave blank to keep current): ", 'weight', self.current_username) or member[5]
 
-                first_name = self.input_validator.get_validated_input("Enter new first name (leave blank to keep current): ", 'name', self.current_username)
-                last_name = self.input_validator.get_validated_input("Enter new last name (leave blank to keep current): ", 'name', self.current_username)
-                age = self.input_validator.get_validated_input("Enter new age (leave blank to keep current): ", 'age', self.current_username)
-                gender = self.input_validator.get_validated_input("Enter new gender (male/female/other, leave blank to keep current): ", 'gender', self.current_username)
-                weight = self.input_validator.get_validated_input("Enter new weight (leave blank to keep current): ", 'weight', self.current_username)
-                address = self.input_validator.get_validated_input("Enter new address (leave blank to keep current): ", 'address', self.current_username)
-                email = self.input_validator.get_validated_input("Enter new email (leave blank to keep current): ", 'email', self.current_username)
-                phone = self.input_validator.get_validated_input("Enter new phone (leave blank to keep current): ", 'phone', self.current_username)
+                # Prompt for address updates (step by step)
+                street_name = self.input_validator.get_validated_input("Enter new Street Name (leave blank to keep current): ", 'address', self.current_username)
+                house_number = self.input_validator.get_validated_input("Enter new House Number (leave blank to keep current): ", 'number', self.current_username)
+                zip_code = self.input_validator.get_validated_input("Enter new Zip Code (DDDDXX, leave blank to keep current): ", 'zipcode', self.current_username)
 
+                # City selection with validation
+                print("Choose a city from the following list (leave blank to keep current):")
+                for index, city in enumerate(cities, 1):
+                    print(f"{index}. {city}")
+
+                while True:
+                    city_choice = self.input_validator.get_validated_input("Enter the number corresponding to your city (leave blank to keep current): ", 'number', self.current_username)
+                    
+                    if not city_choice:
+                        city = member[6].split(",")[-1].strip()  # Use the current city from the member's address
+                        break
+                    elif 1 <= int(city_choice) <= len(cities):
+                        city = cities[int(city_choice) - 1]
+                        break
+                    else:
+                        print(f"Please enter a number between 1 and {len(cities)}.")
+
+                # If any part of the address is skipped, keep the current values
+                street_name = street_name or member[6].split(",")[0].strip()
+                house_number = house_number or member[6].split(",")[1].strip()
+                zip_code = zip_code or member[6].split(",")[2].strip().split()[0]
+
+                # Reconstruct the address
+                address = f"{street_name} {house_number}, {zip_code}, {city}"
+
+                # Collect email and phone number with the option to skip (keep current values)
+                email = self.input_validator.get_validated_input("Enter new email (leave blank to keep current): ", 'email', self.current_username) or member[7]
+                phone = self.input_validator.get_validated_input("Enter new phone (leave blank to keep current): ", 'phone', self.current_username) or member[8]
+
+                # Update the member in the system
                 self.member.update_member(
-                    member_id,
-                    first_name or None,
-                    last_name or None,
-                    int(age) if age else None,
-                    gender or None,
-                    float(weight) if weight else None,
-                    address or None,
-                    email or None,
-                    phone or None
+                member_id,
+                first_name or None,
+                last_name or None,
+                int(age) if age else None,
+                gender or None,
+                float(weight) if weight else None,
+                address or None,
+                email or None,
+                phone or None
                 )
+
                 print("Member updated successfully.")
             else:
                 print("Member not found.")
+        
         except ValueError as e:
             print(f"Error: {e}")
         except Exception as e:
