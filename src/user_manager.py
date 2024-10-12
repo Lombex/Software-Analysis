@@ -49,7 +49,7 @@ class UserManager:
         try:
             username = self.input_validator.get_validated_input("Username: ", 'username', self.current_username)
             password = self.input_validator.get_validated_input("Password: ", 'password', self.current_username)
-            role = self.input_validator.get_validated_input("Role (consultant/system_admin/super_admin): ", 'role', self.current_username)
+            role = self.input_validator.get_validated_input("Role (consultant/system_admin): ", 'role', self.current_username)
             first_name = self.input_validator.get_validated_input("First Name: ", 'name', self.current_username)
             last_name = self.input_validator.get_validated_input("Last Name: ", 'name', self.current_username)
 
