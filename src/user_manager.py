@@ -48,7 +48,11 @@ class UserManager:
         try:
             username = self.input_validator.validate_any_inputs("Username: ", 'username', self.current_username)
             password = self.input_validator.validate_any_inputs("Password: ", 'password', self.current_username)
-            role = self.input_validator.validate_any_inputs("Role (consultant/system_admin): ", 'role', self.current_username)
+            if self.current_user_role  == 'super_admin':
+                role = self.input_validator.validate_any_inputs("Role (consultant/system_admin): ", 'role', self.current_username).lower()
+            if self.current_user_role  == 'system_admin':
+                print('Role: consultant')
+                role = 'consultant'
             first_name = self.input_validator.validate_any_inputs("First Name: ", 'name', self.current_username)
             last_name = self.input_validator.validate_any_inputs("Last Name: ", 'name', self.current_username)
 
@@ -85,16 +89,24 @@ class UserManager:
             username = self.input_validator.validate_any_inputs("Enter username to update: ", 'username', self.current_username)
             user = User.get_user(username)  # Fetch user details from User directly
             if user:
-                print("Current User details:")
-                print(f"Username: {user[0]}, Role: {user[1]}, Name: {user[2]} {user[3]}")
+                print('found')
+                if self.current_user_role  == 'system_admin' and user[1] in ['super_admin','system_admin']:
+                    print("You don't have permission to update this user.")
+                    return
+                elif self.current_user_role == 'super_admin'and user[1] is 'super_admin':
+                    print("You don't have permission to update this user.")
+                    return
+                else:
+                    print("Current User details:")
+                    print(f"Username: {user[0]}, Role: {user[1]}, Name: {user[2]} {user[3]}")
 
-                password = self.input_validator.validate_any_inputs("Enter new password (leave blank to keep current): ", 'password', self.current_username)
-                role = self.input_validator.validate_any_inputs("Enter new role (consultant/system_admin leave blank to keep current): ", 'role', self.current_username)
-                first_name = self.input_validator.validate_any_inputs("Enter new first name (leave blank to keep current): ", 'name', self.current_username)
-                last_name = self.input_validator.validate_any_inputs("Enter new last name (leave blank to keep current): ", 'name', self.current_username)
+                    password = self.input_validator.validate_any_inputs("Enter new password (leave blank to keep current): ", 'password', self.current_username)
+                    role = self.input_validator.validate_any_inputs("Enter new role (consultant/system_admin leave blank to keep current): ", 'role', self.current_username)
+                    first_name = self.input_validator.validate_any_inputs("Enter new first name (leave blank to keep current): ", 'name', self.current_username)
+                    last_name = self.input_validator.validate_any_inputs("Enter new last name (leave blank to keep current): ", 'name', self.current_username)
 
-                User.update_user(username, password or None, role or None, first_name or None, last_name or None)  # Call update_user from User directly
-                print("User updated successfully.")
+                    User.update_user(username, password or None, role or None, first_name or None, last_name or None)  # Call update_user from User directly
+                    print("User updated successfully.")
             else:
                 print("User not found.")
         except ValueError as e:
@@ -103,11 +115,20 @@ class UserManager:
             print(f"An error occurred: {e}")
 
     def delete_user(self):
-        if self.current_user_role != 'super_admin':
-            print("You don't have permission to delete users.")
+        if self.current_user_role not in ['system_admin', 'super_admin']:
+            print("You don't have permission to update users.")
             return
         try:
             username = self.input_validator.validate_any_inputs("Enter username to delete: ", 'username', self.current_username)
+            user = User.get_user(username)
+            if user:
+                if self.current_user_role  == 'system_admin' and user[1] in ['super_admin','system_admin']:
+                    print("You don't have permission to delete this user.")
+                    return
+                elif self.current_user_role == 'super_admin'and user[1] is 'super_admin':
+                    print("You don't have permission to delete this user.")
+                    return
+        
             User.delete_user(username)  # Call delete_user from User directly
             print("User deleted successfully.")
         except Exception as e:
@@ -119,12 +140,14 @@ class UserManager:
             return
         try:
             username = self.input_validator.validate_any_inputs("Enter username to create temporary password: ", 'username', self.current_username)
-            
-            # Validate if username exists
-            user = User.get_user(username)  # Call get_user from User directly
-            if not user:
-                print(f"User '{username}' not found.")
-                return
+            user = User.get_user(username)
+            if user:
+                if self.current_user_role  == 'system_admin' and user[1] in ['super_admin','system_admin']:
+                    print("You don't have permission for this action.")
+                    return
+                elif self.current_user_role == 'super_admin'and user[1] is 'super_admin':
+                    print("You don't have permission for this action.")
+                    return
             
             # Create temporary password
             temporary_password = self.input_validator.validate_any_inputs("Enter temporary password: ", 'password', self.current_username)

@@ -45,16 +45,10 @@ class Login:
                 login_attempt += 1
                 print("Login failed. Please check your credentials.")
 
-    @staticmethod
-    def handle_user_role(user, auth, logger):  # Add parameters to handle_user_role
-        username, role = user[1], user[2]  # Extract username and role from user object
-        if role == 'consultant':
-            Login.consultant_menu(user, auth, logger)  # Pass auth and logger
-        elif role in ['system_admin', 'super_admin']:
-            Login.admin_menu(user, auth, logger)
 
     @staticmethod
     def consultant_menu(user, auth: Auth, logger: Logger):
+        validation_utility = InputValidationUtility()
         username = user[1]  # Extract username
         while True:
             print("\nConsultant Menu:")
@@ -65,8 +59,9 @@ class Login:
             choice = input("Enter choice: ")
 
             if choice == '1':
-                new_password = input("Enter new password: ")
-                if auth.change_password(username, new_password):
+                current_password = input("Enter old password: ")
+                new_password = validation_utility.validate_any_inputs('Enter new password: ', 'password', username )
+                if auth.change_password(username,current_password, new_password):
                     print("Password changed successfully.")
                     logger.log_activity(username, "Changed their password")
                 else:
@@ -96,8 +91,7 @@ class Login:
             print("4. Create Backup")
             print("5. Restore Backup")
             print("6. View Logs")
-            print("7. Print Log")
-            print("8. Logout")
+            print("7. Logout")
 
             choice = input("Enter choice: ")
 
@@ -116,7 +110,7 @@ class Login:
                 logger.log_activity(username, "Accessed Member Management")
 
             elif choice == '3':
-                if role == 'super_admin':
+                if role in ['system_admin', 'super_admin']:
                     user_manager = UserManager()  # Assuming user_manager is instantiated here
                     user_manager.run_user_management(user)
                     logger.log_activity(username, "Accessed User Management")
@@ -124,7 +118,7 @@ class Login:
                     print("You do not have permission to access this section.")
 
             elif choice == '4':
-                if role == 'super_admin':
+                if role in ['system_admin', 'super_admin']:
                     backup = Backup()  # Assuming backup is instantiated here
                     backup.create_backup()
                     logger.log_activity(username, "Created Backup")
@@ -132,17 +126,17 @@ class Login:
                     print("You do not have permission to access this section.")
 
             elif choice == '5':
-                if role == 'super_admin':
+                if role in ['system_admin', 'super_admin']:
                     backup_name = input("Enter backup name: ")
                     backup.restore_backup(backup_name)
                     logger.log_activity(username, "Restored Backup")
                 else:
                     print("You do not have permission to access this section.")
 
-            elif choice in ['6', '7']:
+            elif choice == '6':
                 Login.print_log(logger)
 
-            elif choice == '8':
+            elif choice == '7':
                 logger.log_activity(username, "Logged out")
                 break
 

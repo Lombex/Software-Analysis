@@ -38,7 +38,6 @@ def main():
                 user = Login.login(auth, logger)  # Pass auth and logger to login
                 if user:
                     user_id, username, role = user  # Unpack the tuple returned by login
-                    print(f"Welcome {username}")  # Print welcome message with username
                     logger.log_activity(username, "Logged in")
 
                     # Call menu based on user role (add this part based on your requirements)
