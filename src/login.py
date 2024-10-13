@@ -96,6 +96,9 @@ class Login:
             choice = input("Enter choice: ")
 
             if choice == '1':
+                if user[2] == 'super_admin':
+                    print('Not allowed to change password.')
+                    return
                 current_password = input("Enter old password: ")
                 new_password = validation_utility.validate_any_inputs('Enter new password: ', 'password', username )
                 if auth.change_password(username, current_password, new_password):

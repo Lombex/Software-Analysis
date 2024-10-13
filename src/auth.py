@@ -2,6 +2,7 @@ import sqlite3
 from hashlib import sha256
 import secrets
 import string
+from validationHelper import *
 
 class Auth:
     def __init__(self, db_name='unique_meal.db'):
@@ -22,11 +23,6 @@ class Auth:
         c = conn.cursor()
 
         try:
-            # Validate new password
-            if not self.is_valid_password(new_password):
-                print("Invalid password. Please ensure your new password meets the requirements.")
-                conn.close()
-                return False
 
             # Check current password
             c.execute("SELECT * FROM users WHERE username=? AND password_hash=?", (username, sha256(current_password.encode('utf-8')).hexdigest()))
@@ -106,17 +102,3 @@ class Auth:
             return False
         finally:
             conn.close()
-
-    def is_valid_password(self, password):
-        # Implement your password validation logic here
-        if len(password) < 8:
-            return False
-        if not any(char.isupper() for char in password):
-            return False
-        if not any(char.islower() for char in password):
-            return False
-        if not any(char.isdigit() for char in password):
-            return False
-        # Add more validation rules as needed
-
-        return True
