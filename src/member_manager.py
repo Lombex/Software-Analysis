@@ -160,29 +160,29 @@ class MemberManager:
 
                 first_name = input("Enter new first name (leave blank to keep current): ")
                 if first_name != "":
-                    first_name = self.input_validator.validate_any_inputs(first_name, 'name', self.current_username)
+                    first_name = self.input_validator.validate_any_inputs(first_name, 'name', self.current_username, skip=True)
                 last_name = input("Enter new last name (leave blank to keep current): ")
                 if last_name != "":
-                    last_name = self.input_validator.validate_any_inputs(last_name, 'name', self.current_username)
+                    last_name = self.input_validator.validate_any_inputs(last_name, 'name', self.current_username, skip=True)
                 age = input("Enter new age (leave blank to keep current): ")
                 if age != "":
-                    age = self.input_validator.validate_any_inputs(age, 'age', self.current_username)
+                    age = self.input_validator.validate_any_inputs(age, 'age', self.current_username, skip=True)
                 gender = input("Enter new gender (male/female/other, leave blank to keep current): ")
                 if gender != "":
-                    gender = self.input_validator.validate_any_inputs(gender, 'gender', self.current_username)
+                    gender = self.input_validator.validate_any_inputs(gender, 'gender', self.current_username, skip=True)
                 weight = input("Enter new weight (leave blank to keep current): ")
                 if weight != "":
-                    weight = self.input_validator.validate_any_inputs(weight, 'weight', self.current_username)
+                    weight = self.input_validator.validate_any_inputs(weight, 'weight', self.current_username, skip=True)
                 # Prompt for address updates (step by step)
                 street_name = input("Enter new Street Name (leave blank to keep current): ")
                 if street_name != "":
-                    street_name = self.input_validator.validate_any_inputs(street_name, 'address', self.current_username)
+                    street_name = self.input_validator.validate_any_inputs(street_name, 'address', self.current_username, skip=True)
                 house_number = input("Enter new House Number (leave blank to keep current): ")
                 if house_number != "":
-                    house_number = self.input_validator.validate_any_inputs(house_number, 'number', self.current_username)
+                    house_number = self.input_validator.validate_any_inputs(house_number, 'number', self.current_username, skip=True)
                 zip_code = input("Enter new Zip Code (DDDDXX, leave blank to keep current): ")
                 if zip_code != "":
-                    zip_code = self.input_validator.validate_any_inputs(zip_code, 'zipcode', self.current_username)
+                    zip_code = self.input_validator.validate_any_inputs(zip_code, 'zipcode', self.current_username, skip=True)
 
                 # City selection with validation
                 for index, city in enumerate(cities, 1):
@@ -212,8 +212,13 @@ class MemberManager:
                 address = f"{street_name} {house_number}, {zip_code}, {city}"
 
                 # Collect email and phone number with the option to skip (keep current values)
-                email = self.input_validator.validate_any_inputs("Enter new email (leave blank to keep current): ", 'email', self.current_username)
-                phone = self.input_validator.validate_any_inputs("Enter new phone (leave blank to keep current): Phone +31-6-", 'phone', self.current_username)
+                email = input("Enter new email (leave blank to keep current): ")
+                if email != "":
+                    email = self.input_validator.validate_any_inputs(email, 'email', self.current_username, skip=True)
+
+                phone = input("Enter new phone (leave blank to keep current): Phone +31-6-")
+                if phone != "":
+                    phone = self.input_validator.validate_any_inputs(phone, 'phone', self.current_username, skip=True)
 
                 # Update member details, keeping current values if fields are blank
                 self.member.update_member(

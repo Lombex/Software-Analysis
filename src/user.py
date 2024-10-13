@@ -78,19 +78,42 @@ class User:
 
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
-        c.execute("SELECT * FROM users WHERE username=? AND password_hash=?", (username, password_hash))
-        user = c.fetchone()
-        conn.close()
-        return user  # Returns None if no user found, otherwise returns user details tuple
+        
+        try:
+            # Encrypt the provided username
+            encrypted_username = self.public_key.encrypt(
+                username.encode(),
+                padding.OAEP(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    algorithm=hashes.SHA256(),
+                    label=None
+                )
+            )
+
+            # Query the database with the encrypted username and password hash
+            c.execute("SELECT * FROM users WHERE username=? AND password_hash=?", (encrypted_username, password_hash))
+            user = c.fetchone()
+            return user  # Returns None if no user found, otherwise returns user details tuple
+        except sqlite3.Error as e:
+            print(f"SQLite error: {e}")
+            return None
+        finally:
+            conn.close()
 
     def update_user(self, username, password=None, role=None, first_name=None, last_name=None):
-        # Validate password if provided
-        if password and not validate_password(password):
-            print("Invalid input. Password must adhere to the specified format.")
-            return
-    
+    # Encrypt the username before querying
+        encrypted_username = self.public_key.encrypt(
+            username.encode(),
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
+
         try:
             update_fields = []
             values = []
@@ -127,12 +150,12 @@ class User:
                 )
                 update_fields.append("last_name = ?")
                 values.append(encrypted_last_name)
-            
+
             if not update_fields:
                 print("Nothing to update.")
                 return
 
-            values.append(username)
+            values.append(encrypted_username)  # Append encrypted username
             set_clause = ", ".join(update_fields)
             c.execute(f"UPDATE users SET {set_clause} WHERE username = ?", values)
             conn.commit()
@@ -142,11 +165,23 @@ class User:
         finally:
             conn.close()
 
+
     def delete_user(self, username):
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
         try:
-            c.execute("DELETE FROM users WHERE username=?", (username,))
+            # Encrypt the username before deleting
+            encrypted_username = self.public_key.encrypt(
+                username.encode(),
+                padding.OAEP(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    algorithm=hashes.SHA256(),
+                    label=None
+                )
+            )
+
+            # Delete the user with the encrypted username
+            c.execute("DELETE FROM users WHERE username=?", (encrypted_username,))
             conn.commit()
             print("User deleted successfully.")
         except sqlite3.Error as e:
@@ -157,11 +192,14 @@ class User:
     def get_user(self, username):
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
-        try:
-            c.execute("SELECT username, role, first_name, last_name FROM users WHERE username = ?", (username,))
-            user = c.fetchone()
 
-            if user:
+        try:
+            # Retrieve all users and decrypt each user's username for comparison
+            c.execute("SELECT username, role, first_name, last_name FROM users")
+            users = c.fetchall()
+
+            for user in users:
+                # Decrypt the username
                 decrypted_username = self.private_key.decrypt(
                     user[0],  # Assuming username is the first column
                     padding.OAEP(
@@ -171,31 +209,37 @@ class User:
                     )
                 ).decode()
 
-                decrypted_first_name = self.private_key.decrypt(
-                    user[2],  # Assuming first_name is the third column
-                    padding.OAEP(
-                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                        algorithm=hashes.SHA256(),
-                        label=None
-                    )
-                ).decode()
+                # Check if the decrypted username matches the provided username
+                if decrypted_username == username:
+                    # Decrypt first name and last name if the username matches
+                    decrypted_first_name = self.private_key.decrypt(
+                        user[2],  # Assuming first_name is the third column
+                        padding.OAEP(
+                            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                            algorithm=hashes.SHA256(),
+                            label=None
+                        )
+                    ).decode()
 
-                decrypted_last_name = self.private_key.decrypt(
-                    user[3],  # Assuming last_name is the fourth column
-                    padding.OAEP(
-                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                        algorithm=hashes.SHA256(),
-                        label=None
-                    )
-                ).decode()
+                    decrypted_last_name = self.private_key.decrypt(
+                        user[3],  # Assuming last_name is the fourth column
+                        padding.OAEP(
+                            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                            algorithm=hashes.SHA256(),
+                            label=None
+                        )
+                    ).decode()
 
-                return (decrypted_username, user[1], decrypted_first_name, decrypted_last_name)
+                    return (decrypted_username, user[1], decrypted_first_name, decrypted_last_name)  # Return the decrypted values
+
+            print("User not found.")
             return None
         except sqlite3.Error as e:
             print(f"SQLite error while retrieving user: {e}")
             return None
         finally:
             conn.close()
+
 
     def list_users(self):
         conn = sqlite3.connect(self.db_name)
