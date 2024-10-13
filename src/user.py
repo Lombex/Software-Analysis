@@ -29,8 +29,6 @@ class User:
 
         # Function to add a new user
         password_hash = hashlib.sha256(password.encode()).hexdigest()
-        conn = sqlite3.connect(db_name)
-        c = conn.cursor()
 
         encrypted_username = self.public_key.encrypt(
             username.encode(),
@@ -57,7 +55,9 @@ class User:
                 label=None
             )
         )
-
+        
+        conn = sqlite3.connect(db_name)
+        c = conn.cursor()
         try:
             c.execute("INSERT INTO users (username, password_hash, role, first_name, last_name, registration_date) VALUES (?, ?, ?, ?, ?, ?)",
                       (encrypted_username, password_hash, role, encrypted_first_name, encrypted_last_name, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
