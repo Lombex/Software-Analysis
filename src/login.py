@@ -130,6 +130,8 @@ class Login:
                     backup_name = input("Enter backup name: ")
                     backup.restore_backup(backup_name)
                     logger.log_activity(username, "Restored Backup")
+                    logger.log_activity(username, "Logged out")
+                    break
                 else:
                     print("You do not have permission to access this section.")
 
