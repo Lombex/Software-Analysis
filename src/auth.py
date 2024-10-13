@@ -75,82 +75,135 @@ class Auth:
             # Hash the current password
             current_password_hash = sha256(current_password.encode('utf-8')).hexdigest()
 
-            # Check current password
-            c.execute("SELECT * FROM users WHERE password_hash=?", (current_password_hash,))
-            user = c.fetchone()
+            # Fetch all users with the same password hash
+            c.execute("SELECT id, username FROM users WHERE password_hash=?", (current_password_hash,))
+            users = c.fetchall()
 
-            if not user:
+            if not users:
                 print("Current password incorrect. Password change failed.")
-                conn.close()
                 return False
 
-            # Hash the new password
-            hashed_password = sha256(new_password.encode('utf-8')).hexdigest()
-            c.execute("UPDATE users SET password_hash=? WHERE username=?", (hashed_password, user[1]))
-            conn.commit()
-            conn.close()
-            return True
+            # Loop through each user and attempt to decrypt the username
+            for user in users:
+                if username == user[1]:
+
+                    # Hash the new password
+                    hashed_password = sha256(new_password.encode('utf-8')).hexdigest()
+
+                    # Update the password in the database for the matching username
+                    c.execute("UPDATE users SET password_hash=? WHERE username=?", (hashed_password, user[1]))
+                    conn.commit()
+                    print(f"Password updated successfully for {username}.")
+                    return True
+
+
+            print("Username does not match any users with the given password.")
+            return False
+
         except sqlite3.Error as e:
             print(f"SQLite error while updating password: {e}")
-            conn.close()
             return False
+        finally:
+            conn.close()
+
 
     def reset_password(self, username, temporary_password):
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
 
         try:
-            # Hash the temporary password
-            hashed_password = sha256(temporary_password.encode('utf-8')).hexdigest()
-            c.execute("UPDATE users SET password_hash=? WHERE username=?", (hashed_password, username))
-            conn.commit()
-            conn.close()
-            return True
-        except sqlite3.Error as e:
-            print(f"SQLite error while resetting password: {e}")
-            conn.close()
+            # Fetch all users (since usernames are encrypted)
+            c.execute("SELECT id, username FROM users")
+            users = c.fetchall()
+
+            # Decrypt the usernames and match with the provided username
+            for user in users:
+                encrypted_username = user[1]
+
+                # Decrypt the username
+                try:
+                    decrypted_username = self.private_key.decrypt(
+                        encrypted_username,
+                        padding.OAEP(
+                            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                            algorithm=hashes.SHA256(),
+                            label=None
+                        )
+                    ).decode('utf-8')
+
+                    # If the decrypted username matches, reset the password
+                    if decrypted_username == username:
+                        hashed_password = sha256(temporary_password.encode('utf-8')).hexdigest()
+                        c.execute("UPDATE users SET password_hash=? WHERE username=?", (hashed_password, encrypted_username))
+                        conn.commit()
+                        print(f"Password reset successfully for {decrypted_username}.")
+                        return True
+                except Exception as e:
+                    print(f"Decryption failed for user ID {user[0]}: {e}")
+
+            print("Reset failed. No user found with matching username.")
             return False
 
-    def create_temp_password(self, creator_role, username=None):
-        conn = sqlite3.connect(self.db_name)
-        c = conn.cursor()
-
-        try:
-            if creator_role not in ['super_admin', 'system_admin', 'consultant']:
-                print("You do not have permission to create temporary passwords.")
-                return False
-
-            temp_password = "TempPassword_1"
-            
-            if creator_role == 'consultant' and username:
-                c.execute("UPDATE users SET temp_password=? WHERE username=?", (temp_password, username))
-                conn.commit()
-                print(f"Temporary password '{temp_password}' created for user '{username}'.")
-            elif creator_role == 'super_admin' or creator_role == 'system_admin':
-                c.execute("UPDATE users SET temp_password=?", (temp_password,))
-                conn.commit()
-                print(f"Temporary password '{temp_password}' created for all consultants.")
-                
-            return True
         except sqlite3.Error as e:
-            print(f"SQLite error while creating temporary password: {e}")
+            print(f"SQLite error while resetting password: {e}")
             return False
         finally:
             conn.close()
 
-    def verify_temp_password(self, username, temp_password):
+
+    def create_temp_password(self, creator_role, username=None):
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
-
+    
         try:
-            c.execute("SELECT username FROM users WHERE username=? AND temp_password=?", (username, temp_password))
-            user = c.fetchone()
-            if user:
-                return True
-            else:
+            if creator_role not in ['super_admin', 'system_admin', 'consultant']:
+                print("You do not have permission to create temporary passwords.")
                 return False
+    
+            temp_password = "TempPassword_1"
+    
+            # If username is provided (for consultants)
+            if creator_role == 'consultant' and username:
+                c.execute("SELECT id, username FROM users")
+                users = c.fetchall()
+    
+                # Decrypt usernames to find the matching user
+                for user in users:
+                    encrypted_username = user[1]
+    
+                    # Decrypt the username
+                    try:
+                        decrypted_username = self.private_key.decrypt(
+                            encrypted_username,
+                            padding.OAEP(
+                                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                                algorithm=hashes.SHA256(),
+                                label=None
+                            )
+                        ).decode('utf-8')
+    
+                        # If the decrypted username matches the provided username
+                        if decrypted_username == username:
+                            c.execute("UPDATE users SET temp_password=? WHERE username=?", (temp_password, encrypted_username))
+                            conn.commit()
+                            print(f"Temporary password '{temp_password}' created for user '{decrypted_username}'.")
+                            return True
+                    except Exception as e:
+                        print(f"Decryption failed for user ID {user[0]}: {e}")
+    
+                print(f"User '{username}' not found.")
+                return False
+    
+            # For system_admin or super_admin, apply to all consultants
+            elif creator_role in ['super_admin', 'system_admin']:
+                c.execute("UPDATE users SET temp_password=?", (temp_password,))
+                conn.commit()
+                print(f"Temporary password '{temp_password}' created for all consultants.")
+                return True
+    
         except sqlite3.Error as e:
-            print(f"SQLite error while verifying temporary password: {e}")
+            print(f"SQLite error while creating temporary password: {e}")
             return False
+    
         finally:
             conn.close()
