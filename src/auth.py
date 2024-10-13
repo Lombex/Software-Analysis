@@ -86,14 +86,27 @@ class Auth:
             # Loop through each user and attempt to decrypt the username
             for user in users:
                 if username == user[1]:
+                    try:
+                        decrypted_username = self.private_key.decrypt(
+                            username,
+                            padding.OAEP(
+                                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                                algorithm=hashes.SHA256(),
+                                label=None
+                            )
+                        ).decode('utf-8')
+
+                        # If the decrypted username matches, reset the password
+                    
+                    except Exception as e:
+                        print(f"Decryption failed for user ID {user[0]}: {e}")
 
                     # Hash the new password
                     hashed_password = sha256(new_password.encode('utf-8')).hexdigest()
-
                     # Update the password in the database for the matching username
                     c.execute("UPDATE users SET password_hash=? WHERE username=?", (hashed_password, user[1]))
                     conn.commit()
-                    print(f"Password updated successfully for {username}.")
+                    print(f"Password updated successfully for {decrypted_username}.")
                     return True
 
 
