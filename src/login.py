@@ -28,11 +28,6 @@ class Login:
                 print("Too many login attempts reached!")
                 break
 
-            if logger.detect_sql_injection(username) or logger.detect_sql_injection(password):
-                logger.log_activity(username, "Login Attempt", "Possible SQL Injection", "Yes")
-                print("Suspicious activity detected. Action logged.")
-                continue
-
             # Attempt to log in
             user = auth.login(username, password)
             if user:

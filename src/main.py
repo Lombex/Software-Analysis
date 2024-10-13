@@ -20,7 +20,7 @@ def main():
 
     # Initialize necessary components
     auth = Auth(db_name)
-    logger = Logger(db_name)
+    logger = Logger(db_name, 'src/private_key.pem')
     backup = Backup(db_name)
     member_manager = MemberManager(db_name)
     user_manager = UserManager(db_name)

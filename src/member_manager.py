@@ -158,22 +158,40 @@ class MemberManager:
                 print("Current Member details:")
                 print(f"ID: {member[0]}, First Name: {member[1]}, Last Name: {member[2]}, Age: {member[3]}, Gender: {member[4]}, Weight: {member[5]}, Address: {member[6]}, Email: {member[7]}, Phone: {member[8]}")
 
-                first_name = self.input_validator.validate_any_inputs("Enter new first name (leave blank to keep current): ", 'name', self.current_username)
-                last_name = self.input_validator.validate_any_inputs("Enter new last name (leave blank to keep current): ", 'name', self.current_username)
-                age = self.input_validator.validate_any_inputs("Enter new age (leave blank to keep current): ", 'age', self.current_username)
-                gender = self.input_validator.validate_any_inputs("Enter new gender (male/female/other, leave blank to keep current): ", 'gender', self.current_username)
-                weight = self.input_validator.validate_any_inputs("Enter new weight (leave blank to keep current): ", 'weight', self.current_username)
+                first_name = input("Enter new first name (leave blank to keep current): ")
+                if first_name != "":
+                    first_name = self.input_validator.validate_any_inputs(first_name, 'name', self.current_username)
+                last_name = input("Enter new last name (leave blank to keep current): ")
+                if last_name != "":
+                    last_name = self.input_validator.validate_any_inputs(last_name, 'name', self.current_username)
+                age = input("Enter new age (leave blank to keep current): ")
+                if age != "":
+                    age = self.input_validator.validate_any_inputs(age, 'age', self.current_username)
+                gender = input("Enter new gender (male/female/other, leave blank to keep current): ")
+                if gender != "":
+                    gender = self.input_validator.validate_any_inputs(gender, 'gender', self.current_username)
+                weight = input("Enter new weight (leave blank to keep current): ")
+                if weight != "":
+                    weight = self.input_validator.validate_any_inputs(weight, 'weight', self.current_username)
                 # Prompt for address updates (step by step)
-                street_name = self.input_validator.validate_any_inputs("Enter new Street Name (leave blank to keep current): ", 'address', self.current_username)
-                house_number = self.input_validator.validate_any_inputs("Enter new House Number (leave blank to keep current): ", 'number', self.current_username)
-                zip_code = self.input_validator.validate_any_inputs("Enter new Zip Code (DDDDXX, leave blank to keep current): ", 'zipcode', self.current_username)
+                street_name = input("Enter new Street Name (leave blank to keep current): ")
+                if street_name != "":
+                    street_name = self.input_validator.validate_any_inputs(street_name, 'address', self.current_username)
+                house_number = input("Enter new House Number (leave blank to keep current): ")
+                if house_number != "":
+                    house_number = self.input_validator.validate_any_inputs(house_number, 'number', self.current_username)
+                zip_code = input("Enter new Zip Code (DDDDXX, leave blank to keep current): ")
+                if zip_code != "":
+                    zip_code = self.input_validator.validate_any_inputs(zip_code, 'zipcode', self.current_username)
 
                 # City selection with validation
-                print("Choose a city from the following list (leave blank to keep current):")
                 for index, city in enumerate(cities, 1):
                     print(f"{index}. {city}")
 
                 while True:
+                    city_choice = input("Choose a city from the following list (leave blank to keep current):")
+                    if city_choice == "":
+                        break
                     city_choice = self.input_validator.validate_any_inputs("Enter the number corresponding to your city (leave blank to keep current): ", 'number', self.current_username)
                     
                     if not city_choice:

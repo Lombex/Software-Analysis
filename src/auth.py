@@ -31,33 +31,36 @@ class Auth:
             # Hash the password to compare
             password_hash = sha256(password.encode('utf-8')).hexdigest()
 
-            # Retrieve the encrypted username from the database based on the password hash
+            # Retrieve all users with the matching password hash
             c.execute("SELECT id, username, role FROM users WHERE password_hash=?", (password_hash,))
-            user = c.fetchone()
+            users = c.fetchall()
 
-            if user:
+            # Loop through each user and attempt to decrypt the username
+            for user in users:
                 encrypted_username = user[1]
 
                 # Decrypt the username
-                decrypted_username = self.private_key.decrypt(
-                    encrypted_username,
-                    padding.OAEP(
-                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                        algorithm=hashes.SHA256(),
-                        label=None
-                    )
-                ).decode('utf-8')  # Decode the decrypted bytes to a string
+                try:
+                    decrypted_username = self.private_key.decrypt(
+                        encrypted_username,
+                        padding.OAEP(
+                            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                            algorithm=hashes.SHA256(),
+                            label=None
+                        )
+                    ).decode('utf-8')  # Decode the decrypted bytes to a string
 
-                # Check if the decrypted username matches the provided username
-                if decrypted_username == username:
-                    print(f"Login successful!\nWelcome {decrypted_username}")
-                    return user
-                else:
-                    print("Login failed. Username does not match.")
-                    return None
-            else:
-                print("Login failed. No user found with this password.")
-                return None
+                    # Check if the decrypted username matches the provided username
+                    if decrypted_username == username:
+                        print(f"Login successful!\nWelcome {decrypted_username}")
+                        return user
+                except Exception as e:
+                    print(f"Decryption failed for user ID {user[0]}: {e}")
+
+            # If no matches are found
+            print("Login failed. No user found with matching username and password.")
+            return None
+
         except sqlite3.Error as e:
             print(f"SQLite error during login: {e}")
             return None
