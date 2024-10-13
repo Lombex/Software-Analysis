@@ -223,6 +223,10 @@ class MemberManager:
             return
         try:
             member_id = self.input_validator.validate_any_inputs("Enter member ID to delete: ", 'member_id', self.current_username)
+            _member = self.member.get_member(member_id)
+            if not _member:
+                print(f"Member not found")
+                return
             self.member.delete_member(member_id)
             print("Member deleted successfully.")
         except Exception as e:

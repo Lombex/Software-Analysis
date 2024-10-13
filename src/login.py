@@ -80,7 +80,7 @@ class Login:
                 print("Invalid choice")
 
     @staticmethod
-    def admin_menu(user, auth: Auth, logger: Logger):
+    def admin_menu(user, auth: Auth, logger: Logger, backup : Backup):
         validation_utility = InputValidationUtility()
         username, role = user[1], user[2]  # Extract username and role from user object
         while True:
@@ -119,7 +119,6 @@ class Login:
 
             elif choice == '4':
                 if role in ['system_admin', 'super_admin']:
-                    backup = Backup()  # Assuming backup is instantiated here
                     backup.create_backup()
                     logger.log_activity(username, "Created Backup")
                 else:

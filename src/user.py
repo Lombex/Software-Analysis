@@ -100,6 +100,7 @@ class User:
             return None
         finally:
             conn.close()
+            
     @staticmethod
     def list_users(db_name='unique_meal.db'):
         conn = sqlite3.connect(db_name)

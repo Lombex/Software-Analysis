@@ -7,7 +7,7 @@ import zipfile
 class Backup:
     def __init__(self, db_name='unique_meal.db'):
         self.db_name = db_name
-        self.backup_dir = 'backups'
+        self.backup_dir = 'src/backups'
 
     def create_backup(self):
         try:

@@ -45,7 +45,7 @@ def main():
                         Login.consultant_menu(user, auth, logger)  # Use user info to access member management
                     elif role in ['system_admin', 'super_admin']:
                         # Add appropriate method calls for admin roles
-                        Login.admin_menu(user, auth, logger)  # For example, run user management
+                        Login.admin_menu(user, auth, logger, backup)  # For example, run user management
 
             elif choice == '2':
                 print("Exiting the application.")
