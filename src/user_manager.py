@@ -109,19 +109,19 @@ class UserManager:
                 # Prompt for new values, allowing them to remain blank to keep current values
                 password = input("Enter new password (leave blank to keep current): ").strip()
                 if password:
-                    password = self.input_validator.validate_any_inputs(password, 'password', self.current_username)
+                    password = self.input_validator.validate_any_inputs(password, 'password', self.current_username, skip=True)
     
                 role = input("Enter new role (consultant/system_admin, leave blank to keep current): ").strip()
                 if role:
-                    role = self.input_validator.validate_any_inputs(role, 'role', self.current_username)
+                    role = self.input_validator.validate_any_inputs(role, 'role', self.current_username, skip=True)
     
                 first_name = input("Enter new first name (leave blank to keep current): ").strip()
                 if first_name:
-                    first_name = self.input_validator.validate_any_inputs(first_name, 'name', self.current_username)
+                    first_name = self.input_validator.validate_any_inputs(first_name, 'name', self.current_username, skip=True)
     
                 last_name = input("Enter new last name (leave blank to keep current): ").strip()
                 if last_name:
-                    last_name = self.input_validator.validate_any_inputs(last_name, 'name', self.current_username)
+                    last_name = self.input_validator.validate_any_inputs(last_name, 'name', self.current_username, skip=True)
     
                 # Update user, passing `None` for fields left blank to keep current values
                 self.user.update_user(
