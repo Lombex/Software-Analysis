@@ -56,7 +56,7 @@ class UserManager:
             first_name = self.input_validator.validate_any_inputs("First Name: ", 'name', self.current_username)
             last_name = self.input_validator.validate_any_inputs("Last Name: ", 'name', self.current_username)
 
-            User.add_user(username, password, role, first_name, last_name)  # Pass the necessary arguments directly
+            User.add_user(self, username, password, role, first_name, last_name)  # Pass the necessary arguments directly
             print("User added successfully.")
 
         except ValueError as e:

@@ -2,10 +2,26 @@ import sqlite3
 import hashlib
 from datetime import datetime
 from validation import validate_username, validate_password
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.backends import default_backend
 
-class User:
-    @staticmethod
-    def add_user(username, password, role, first_name, last_name, db_name='unique_meal.db'):
+class User:   
+
+    def __init__(self, db_name='unique_meal.db'):
+        self.db_name = db_name
+        
+        # Load public key for encryption
+        with open('src/public_key.pem', 'rb') as key_file:  # Make sure the path is correct
+            self.public_key = serialization.load_pem_public_key(key_file.read(), backend = default_backend())
+
+        with open('src/private_key.pem', 'rb') as key_file:  # Make sure the path is correct
+            self.private_key = serialization.load_pem_private_key(
+            key_file.read(),
+            password = None,  # Add a password if needed
+            backend = default_backend())
+    
+    def add_user(self, username, password, role, first_name, last_name, db_name='unique_meal.db'):
         # Validate inputs
         if not (validate_username(username) and validate_password(password)):
             print("Invalid input. Username or password does not meet criteria.")
@@ -15,9 +31,36 @@ class User:
         password_hash = hashlib.sha256(password.encode()).hexdigest()
         conn = sqlite3.connect(db_name)
         c = conn.cursor()
+
+        encrypted_username = self.public_key.encrypt(
+            username.encode(),
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+        encrypted_first_name = self.public_key.encrypt(
+            first_name.encode(),
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+        encrypted_last_name = self.public_key.encrypt(
+            last_name.encode(),
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
         try:
             c.execute("INSERT INTO users (username, password_hash, role, first_name, last_name, registration_date) VALUES (?, ?, ?, ?, ?, ?)",
-                      (username, password_hash, role, first_name, last_name, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+                      (encrypted_username, password_hash, role, encrypted_first_name, encrypted_last_name, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
             conn.commit()
             print("User added successfully.")
         except sqlite3.Error as e:

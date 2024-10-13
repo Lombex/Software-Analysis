@@ -18,9 +18,8 @@ class Member:
         with open('src/private_key.pem', 'rb') as key_file:  # Make sure the path is correct
             self.private_key = serialization.load_pem_private_key(
             key_file.read(),
-            password=None,  # Add a password if needed
-            backend=default_backend()
-    )
+            password = None,  # Add a password if needed
+            backend = default_backend())
 
     def add_member(self, first_name, last_name, age, gender, weight, address, email, phone):
         conn = sqlite3.connect(self.db_name)
