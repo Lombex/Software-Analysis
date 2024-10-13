@@ -3,29 +3,77 @@ from hashlib import sha256
 import secrets
 import string
 from validationHelper import *
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.backends import default_backend
 
 class Auth:
     def __init__(self, db_name='unique_meal.db'):
         self.db_name = db_name
 
+        # Load private key for decryption
+        try:
+            with open('src/private_key.pem', 'rb') as key_file:
+                self.private_key = serialization.load_pem_private_key(
+                    key_file.read(),
+                    password=None,
+                    backend=default_backend()
+                )
+        except FileNotFoundError:
+            print("Private key file not found.")
+            self.private_key = None
+
     def login(self, username, password):
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
 
-        c.execute("SELECT id, username, role FROM users WHERE username=? AND password_hash=?", (username, sha256(password.encode('utf-8')).hexdigest()))
-        user = c.fetchone()
+        try:
+            # Hash the password to compare
+            password_hash = sha256(password.encode('utf-8')).hexdigest()
 
-        conn.close()
-        return user
+            # Retrieve the encrypted username from the database based on the password hash
+            c.execute("SELECT id, username, role FROM users WHERE password_hash=?", (password_hash,))
+            user = c.fetchone()
+
+            if user:
+                encrypted_username = user[1]
+
+                # Decrypt the username
+                decrypted_username = self.private_key.decrypt(
+                    encrypted_username,
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    )
+                ).decode('utf-8')  # Decode the decrypted bytes to a string
+
+                # Check if the decrypted username matches the provided username
+                if decrypted_username == username:
+                    print(f"Login successful!\nWelcome {decrypted_username}")
+                    return user
+                else:
+                    print("Login failed. Username does not match.")
+                    return None
+            else:
+                print("Login failed. No user found with this password.")
+                return None
+        except sqlite3.Error as e:
+            print(f"SQLite error during login: {e}")
+            return None
+        finally:
+            conn.close()
 
     def change_password(self, username, current_password, new_password):
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
 
         try:
+            # Hash the current password
+            current_password_hash = sha256(current_password.encode('utf-8')).hexdigest()
 
             # Check current password
-            c.execute("SELECT * FROM users WHERE username=? AND password_hash=?", (username, sha256(current_password.encode('utf-8')).hexdigest()))
+            c.execute("SELECT * FROM users WHERE password_hash=?", (current_password_hash,))
             user = c.fetchone()
 
             if not user:
@@ -33,9 +81,9 @@ class Auth:
                 conn.close()
                 return False
 
-            # Update password
+            # Hash the new password
             hashed_password = sha256(new_password.encode('utf-8')).hexdigest()
-            c.execute("UPDATE users SET password_hash=? WHERE username=?", (hashed_password, username))
+            c.execute("UPDATE users SET password_hash=? WHERE username=?", (hashed_password, user[1]))
             conn.commit()
             conn.close()
             return True
@@ -49,6 +97,7 @@ class Auth:
         c = conn.cursor()
 
         try:
+            # Hash the temporary password
             hashed_password = sha256(temporary_password.encode('utf-8')).hexdigest()
             c.execute("UPDATE users SET password_hash=? WHERE username=?", (hashed_password, username))
             conn.commit()

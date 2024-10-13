@@ -1,23 +1,70 @@
 import sqlite3
 import hashlib
 from datetime import datetime
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.backends import default_backend
 from validation import validate_username, validate_password
 
 class User:
-    @staticmethod
-    def add_user(username, password, role, first_name, last_name, db_name='unique_meal.db'):
+    def __init__(self, db_name='unique_meal.db'):
+        self.db_name = db_name
+        
+        # Load public key for encryption
+        with open('src/public_key.pem', 'rb') as key_file:
+            self.public_key = serialization.load_pem_public_key(key_file.read(), backend=default_backend())
+
+        # Load private key for decryption
+        with open('src/private_key.pem', 'rb') as key_file:
+            self.private_key = serialization.load_pem_private_key(
+                key_file.read(),
+                password=None,
+                backend=default_backend()
+            )
+
+    def add_user(self, username, password, role, first_name, last_name):
         # Validate inputs
         if not (validate_username(username) and validate_password(password)):
             print("Invalid input. Username or password does not meet criteria.")
             return
 
-        # Function to add a new user
+        # Hash the password
         password_hash = hashlib.sha256(password.encode()).hexdigest()
-        conn = sqlite3.connect(db_name)
+
+        # Encrypt sensitive fields
+        encrypted_username = self.public_key.encrypt(
+            username.encode(),
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+        encrypted_first_name = self.public_key.encrypt(
+            first_name.encode(),
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+        encrypted_last_name = self.public_key.encrypt(
+            last_name.encode(),
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+        conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
         try:
+            # Insert encrypted data into the database
             c.execute("INSERT INTO users (username, password_hash, role, first_name, last_name, registration_date) VALUES (?, ?, ?, ?, ?, ?)",
-                      (username, password_hash, role, first_name, last_name, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+                      (encrypted_username, password_hash, role, encrypted_first_name, encrypted_last_name, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
             conn.commit()
             print("User added successfully.")
         except sqlite3.Error as e:
@@ -25,52 +72,68 @@ class User:
         finally:
             conn.close()
 
-    @staticmethod
-    def authenticate_user(username, password, db_name='unique_meal.db'):
-        # Function to authenticate a user
+    def authenticate_user(self, username, password):
+        # Hash the password to compare with stored hash
         password_hash = hashlib.sha256(password.encode()).hexdigest()
-        conn = sqlite3.connect(db_name)
+
+        conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
         c.execute("SELECT * FROM users WHERE username=? AND password_hash=?", (username, password_hash))
         user = c.fetchone()
         conn.close()
         return user  # Returns None if no user found, otherwise returns user details tuple
 
-    @staticmethod
-    def update_user(username, password=None, role=None, first_name=None, last_name=None, db_name='unique_meal.db'):
+    def update_user(self, username, password=None, role=None, first_name=None, last_name=None):
         # Validate password if provided
         if password and not validate_password(password):
             print("Invalid input. Password must adhere to the specified format.")
             return
     
-        conn = sqlite3.connect(db_name)
+        conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
         try:
             update_fields = []
             values = []
-    
+
             if password:
                 password_hash = hashlib.sha256(password.encode()).hexdigest()
                 update_fields.append("password_hash = ?")
                 values.append(password_hash)
+
             if role:
                 update_fields.append("role = ?")
                 values.append(role)
+
             if first_name:
+                encrypted_first_name = self.public_key.encrypt(
+                    first_name.encode(),
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    )
+                )
                 update_fields.append("first_name = ?")
-                values.append(first_name)
+                values.append(encrypted_first_name)
+
             if last_name:
+                encrypted_last_name = self.public_key.encrypt(
+                    last_name.encode(),
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    )
+                )
                 update_fields.append("last_name = ?")
-                values.append(last_name)
+                values.append(encrypted_last_name)
             
-            # If no fields are provided to update, exit early
             if not update_fields:
                 print("Nothing to update.")
                 return
-    
+
             values.append(username)
             set_clause = ", ".join(update_fields)
-            print(f"Updating user {username} with set clause: {set_clause} and values: {values}")  # Debug statement
             c.execute(f"UPDATE users SET {set_clause} WHERE username = ?", values)
             conn.commit()
             print("User updated successfully.")
@@ -79,10 +142,8 @@ class User:
         finally:
             conn.close()
 
-    @staticmethod
-    def delete_user(username, db_name='unique_meal.db'):
-        # Function to delete a user
-        conn = sqlite3.connect(db_name)
+    def delete_user(self, username):
+        conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
         try:
             c.execute("DELETE FROM users WHERE username=?", (username,))
@@ -92,32 +153,96 @@ class User:
             print(f"SQLite error while deleting user: {e}")
         finally:
             conn.close()
-    @staticmethod
-    def get_user(username, db_name='unique_meal.db'):
-        conn = sqlite3.connect(db_name)
+
+    def get_user(self, username):
+        conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
         try:
             c.execute("SELECT username, role, first_name, last_name FROM users WHERE username = ?", (username,))
-            user = c.fetchone()  # Fetch one user
-            return user  # Return user details if found, otherwise return None
+            user = c.fetchone()
+
+            if user:
+                decrypted_username = self.private_key.decrypt(
+                    user[0],  # Assuming username is the first column
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    )
+                ).decode()
+
+                decrypted_first_name = self.private_key.decrypt(
+                    user[2],  # Assuming first_name is the third column
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    )
+                ).decode()
+
+                decrypted_last_name = self.private_key.decrypt(
+                    user[3],  # Assuming last_name is the fourth column
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    )
+                ).decode()
+
+                return (decrypted_username, user[1], decrypted_first_name, decrypted_last_name)
+            return None
         except sqlite3.Error as e:
             print(f"SQLite error while retrieving user: {e}")
             return None
         finally:
             conn.close()
-            
-    @staticmethod
-    def list_users(db_name='unique_meal.db'):
-        conn = sqlite3.connect(db_name)
-        c = conn.cursor()
 
+    def list_users(self):
+        conn = sqlite3.connect(self.db_name)
+        c = conn.cursor()
         try:
-            # Execute SELECT query to get all users
             c.execute("SELECT username, role, first_name, last_name FROM users")
             users = c.fetchall()
-            return users  # Return the fetched users
+
+            decrypted_users = []
+            for user in users:
+                decrypted_username = self.private_key.decrypt(
+                    user[0],  # Assuming username is the first column
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    )
+                ).decode()
+
+                decrypted_first_name = self.private_key.decrypt(
+                    user[2],  # Assuming first_name is the third column
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    )
+                ).decode()
+
+                decrypted_last_name = self.private_key.decrypt(
+                    user[3],  # Assuming last_name is the fourth column
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    )
+                ).decode()
+
+                decrypted_users.append((
+                    decrypted_username,
+                    user[1],  # Role is not encrypted
+                    decrypted_first_name,
+                    decrypted_last_name
+                ))
+
+            return decrypted_users
         except sqlite3.Error as e:
             print(f"SQLite error while fetching users: {e}")
-            return []  # Return an empty list in case of error
+            return []
         finally:
             conn.close()

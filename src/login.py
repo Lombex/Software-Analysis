@@ -37,7 +37,6 @@ class Login:
             user = auth.login(username, password)
             if user:
                 user_id, username, role = user  # Unpack the tuple returned by login
-                print(f"Welcome {username}")  # Print welcome message with username
                 logger.log_activity(username, "Logged in")
                 login_attempt = 0  # Reset the attempt count on successful login
                 return user
