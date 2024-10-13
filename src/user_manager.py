@@ -85,30 +85,59 @@ class UserManager:
         if self.current_user_role not in ['system_admin', 'super_admin']:
             print("You don't have permission to update users.")
             return
+        
         try:
             username = self.input_validator.validate_any_inputs("Enter username to update: ", 'username', self.current_username)
             user = User.get_user(username)  # Fetch user details from User directly
+            
             if user:
-                print('found')
-                if self.current_user_role  == 'system_admin' and user[1] in ['super_admin','system_admin']:
+                print('User found')
+                if self.current_user_role == 'system_admin' and user[1] in ['super_admin', 'system_admin']:
                     print("You don't have permission to update this user.")
                     return
-                elif self.current_user_role == 'super_admin'and user[1] == 'super_admin':
+                elif self.current_user_role == 'super_admin' and user[1] == 'super_admin':
                     print("You don't have permission to update this user.")
                     return
                 else:
-                    print("Current User details:")
                     print(f"Username: {user[0]}, Role: {user[1]}, Name: {user[2]} {user[3]}")
+                    
+                    # Password input loop
+                    while True:
+                        try:
+                            # Validate password and break if valid
+                            _password = input("Enter new password (leave blank to keep current): ").strip()
+                            password = self.input_validator.validate_any_inputs(_password, 'password', self.current_username)
+                            break
+                        except ValueError as e:
+                            print(f"Password must be at least 12 characters long.")  # Clear error and re-prompt for input
+                    
+                    # Role input
+                    role = input("Enter new role (consultant/system_admin, leave blank to keep current): ").strip()
+                    if role:
+                        role = self.input_validator.validate_any_inputs(role, 'role', self.current_username)
+                    else:
+                        role = None  # Leave current role if blank
 
-                    password = self.input_validator.validate_any_inputs("Enter new password (leave blank to keep current): ", 'password', self.current_username)
-                    role = self.input_validator.validate_any_inputs("Enter new role (consultant/system_admin leave blank to keep current): ", 'role', self.current_username)
-                    first_name = self.input_validator.validate_any_inputs("Enter new first name (leave blank to keep current): ", 'name', self.current_username)
-                    last_name = self.input_validator.validate_any_inputs("Enter new last name (leave blank to keep current): ", 'name', self.current_username)
+                    # First name input
+                    first_name = input("Enter new first name (leave blank to keep current): ").strip()
+                    if first_name:
+                        first_name = self.input_validator.validate_any_inputs(first_name, 'name', self.current_username)
+                    else:
+                        first_name = None  # Leave current first name if blank
 
-                    User.update_user(username, password or None, role or None, first_name or None, last_name or None)  # Call update_user from User directly
-                    print("User updated successfully.")
+                    # Last name input
+                    last_name = input("Enter new last name (leave blank to keep current): ").strip()
+                    if last_name:
+                        last_name = self.input_validator.validate_any_inputs(last_name, 'name', self.current_username)
+                    else:
+                        last_name = None  # Leave current last name if blank
+
+                    # Call the static method to update the user in the User class
+                    User.update_user(username, password or None, role or None, first_name or None, last_name or None)
+            
             else:
                 print("User not found.")
+        
         except ValueError as e:
             print(f"Error: {e}")
         except Exception as e:

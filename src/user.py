@@ -62,6 +62,11 @@ class User:
             if last_name:
                 update_fields.append("last_name = ?")
                 values.append(last_name)
+            
+            # If no fields are provided to update, exit early
+            if not update_fields:
+                print("Nothing to update.")
+                return
     
             values.append(username)
             set_clause = ", ".join(update_fields)
