@@ -101,20 +101,36 @@ class User:
             conn.close()
 
     def update_user(self, username, password=None, role=None, first_name=None, last_name=None):
-    # Encrypt the username before querying
-        encrypted_username = self.public_key.encrypt(
-            username.encode(),
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None
-            )
-        )
-
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
 
         try:
+            # First, retrieve the encrypted username by decrypting it
+            c.execute("SELECT username FROM users")
+            users = c.fetchall()
+            encrypted_username = None
+
+            # Loop through all users and decrypt their usernames to find the matching one
+            for user in users:
+                decrypted_username = self.private_key.decrypt(
+                    user[0],  # Assuming username is in the first column
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    )
+                ).decode('utf-8')
+
+                # Check if the decrypted username matches the input
+                if decrypted_username == username:
+                    encrypted_username = user[0]  # Save the encrypted username for later use
+                    break
+
+            if not encrypted_username:
+                print("User not found.")
+                return
+
+            # Now proceed to update the fields as necessary
             update_fields = []
             values = []
 
@@ -155,7 +171,8 @@ class User:
                 print("Nothing to update.")
                 return
 
-            values.append(encrypted_username)  # Append encrypted username
+            # Use the encrypted username to identify the record to update
+            values.append(encrypted_username)
             set_clause = ", ".join(update_fields)
             c.execute(f"UPDATE users SET {set_clause} WHERE username = ?", values)
             conn.commit()
@@ -166,24 +183,43 @@ class User:
             conn.close()
 
 
+
     def delete_user(self, username):
         conn = sqlite3.connect(self.db_name)
         c = conn.cursor()
+        
         try:
-            # Encrypt the username before deleting
-            encrypted_username = self.public_key.encrypt(
-                username.encode(),
-                padding.OAEP(
-                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                    algorithm=hashes.SHA256(),
-                    label=None
-                )
-            )
+            # Retrieve all users from the database to find the correct encrypted username
+            c.execute("SELECT username FROM users")
+            users = c.fetchall()
+            encrypted_username = None
 
-            # Delete the user with the encrypted username
+            # Loop through all users and decrypt each username
+            for user in users:
+                decrypted_username = self.private_key.decrypt(
+                    user[0],  # Assuming username is the first column
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    )
+                ).decode('utf-8')
+
+                # If decrypted username matches the input username, store the encrypted version
+                if decrypted_username == username:
+                    encrypted_username = user[0]
+                    break
+
+            # If no matching user is found, exit
+            if not encrypted_username:
+                print("User not found.")
+                return
+
+            # Now delete the user based on the encrypted username
             c.execute("DELETE FROM users WHERE username=?", (encrypted_username,))
             conn.commit()
             print("User deleted successfully.")
+            
         except sqlite3.Error as e:
             print(f"SQLite error while deleting user: {e}")
         finally:
