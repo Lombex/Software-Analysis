@@ -129,7 +129,7 @@ class InputValidationUtility:
                 return True, ""
             return False, f"{input_type.capitalize()} cannot be empty."
 
-    def validate_any_inputs(self, prompt, input_type, username):
+    def validate_any_inputs(self, prompt, input_type, username, skip=False):
         """
         Prompt the user for input, validate it based on the specified input type,
         and check for suspicious activity.
@@ -140,7 +140,9 @@ class InputValidationUtility:
         :return: The validated input value
         """
         while True:
-            value = input(prompt).strip()
+            value = prompt
+            if not skip:
+                value = input(prompt).strip()
             if self.detect_sql_injection(value):
                 self.log_input_attempt(username, input_type, True, value)
                 raise ValueError("Suspicious activity detected. Please try again later.")
